@@ -1,47 +1,17 @@
-import React, { useEffect, useRef } from 'react';
-
-declare global {
-  interface Window {
-    Plotly: any;
-  }
-}
+import React from 'react';
 
 export default function MapScreen() {
-  const mapRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const plotMap = () => {
-      const mapboxAccessToken = 'pk.eyJ1Ijoic3JhZWwxMiIsImEiOiJjbTRwZTN1ZXIwdGNjMmpyMjNmMXN2b2owIn0.sePFQdsOdmLqggMVWaooXA'; // Replace with your Mapbox token
-      const data = [
-        {
-          type: 'scattermapbox',
-          lat: [37.78825], // Example latitude
-          lon: [-122.4324], // Example longitude
-          mode: 'markers',
-          marker: { size: 12 },
-          text: ['My Location'], // Marker label
-        },
-      ];
-
-      const layout = {
-        mapbox: {
-          style: 'mapbox://styles/mapbox/streets-v11',
-          center: { lat: 37.78825, lon: -122.4324 },
-          zoom: 12,
-          accesstoken: mapboxAccessToken,
-        },
-        margin: { t: 0, b: 0, l: 0, r: 0 },
-      };
-
-      window.Plotly.newPlot(mapRef.current, data, layout);
-    };
-
-    // Load Plotly library dynamically
-    const script = document.createElement('script');
-    script.src = 'https://cdn.plot.ly/plotly-2.24.1.min.js';
-    script.onload = plotMap;
-    document.body.appendChild(script);
-  }, []);
-
-  return <div ref={mapRef} style={{ width: '100%', height: '100vh' }} />;
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100vh', margin: 0, padding: 0 }}>
+      {/* Embedding the ArcGIS Experience */}
+      <iframe
+        src="https://experience.arcgis.com/experience/b645389696674c228440a4a1ea375f34"
+        width="100%"
+        height="100%"
+        frameBorder="0"
+        style={{ border: 'none' }}
+        title="ArcGIS Experience"
+      ></iframe>
+    </div>
+  );
 }

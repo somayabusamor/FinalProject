@@ -2,10 +2,13 @@
   "extends": "expo/tsconfig.base",
   "compilerOptions": {
     "strict": true,
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "baseUrl": "./",
     "paths": {
-      "@/*": [
-        "./*"
-      ]
+      "@/frontend/*": ["frontend/*"],
+      "@/components/*": ["frontend/components"],
+      "@/hooks/*": ["frontend/hooks"],
+      "@/constants/*": ["frontend/constants"]
     }
   },
   "include": [
@@ -13,5 +16,5 @@
     "**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
-, "app/(tabs)/ContactUs.tsx"  ]
+  ]
 }
