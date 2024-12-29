@@ -60,6 +60,13 @@ export default function TabLayout() {
         }}
       />
       <Tabs.Screen
+        name="SubmitUpdate"
+        options={{
+          title: 'Update',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />, // Customize the icon
+        }}
+      />
+      <Tabs.Screen
         name="map"
         options={{
           title: 'Map',
