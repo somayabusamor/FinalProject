@@ -11,13 +11,8 @@ const UpdateSchema = new mongoose.Schema({
     required: true,
   },
   description: { type: String, required: true },
-  images: [{ type: String }], // Array of image paths
-  createdAt: { type: Date, default: Date.now }, // Automatically add a timestamp
-  status: {
-    type: String,
-    enum: ["pending", "approved", "rejected"],
-    default: "pending",
-  },
+  //images: [{ type: String }], // Array of image paths
+ // Automatically add a timestam
 });
 
 // Validation schema

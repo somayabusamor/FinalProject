@@ -20,51 +20,68 @@ const SubmitUpdate: React.FC = () => {
         images: null,
     });
 
+    const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
+
     const handleInputChange = (
         e: ChangeEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>
-      ) => {
+    ) => {
         const { name, value } = e.target;
         setFormData((prev) => ({ ...prev, [name]: value }));
-      };
-    
-      const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
+    };
+
+    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
         const files = e.target.files;
         if (files) {
-          setFormData((prev) => ({ ...prev, images: Array.from(files) }));
+            setFormData((prev) => ({ ...prev, images: Array.from(files) }));
         }
-      };
+    };
+
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
-    
+
         const formDataToSend = new FormData();
         formDataToSend.append('firstName', formData.firstName);
         formDataToSend.append('lastName', formData.lastName);
         formDataToSend.append('villageName', formData.villageName);
         formDataToSend.append('updateType', formData.updateType);
         formDataToSend.append('description', formData.description);
-    
+
         if (formData.images) {
-          for (const file of formData.images) {
-            formDataToSend.append('images', file);
-          }
+            for (const file of formData.images) {
+                formDataToSend.append('images', file);
+            }
         }
-    
+
         try {
-          const response = await fetch('http://localhost:8081/api/submitUpdate', {
-            method: 'POST',
-            body: formDataToSend,
-          });
-    
-          if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-          }
-    
-          const data = await response.json();
-          console.log('Update submitted:', data);
+            const response = await fetch('http://localhost:8081/api', {
+                method: 'POST',
+                body: formDataToSend,
+            });
+
+            if (!response.ok) {
+              if (response.status === 404) {
+                throw new Error('API endpoint not found. Please check the URL.');
+            }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+            setStatusMessage({ type: 'success', text: 'Update submitted successfully!' });
+            console.log('Update submitted:', data);
+            setFormData({
+                firstName: '',
+                lastName: '',
+                villageName: '',
+                updateType: '',
+                description: '',
+                images: null,
+            });
         } catch (error) {
-          console.error('Error:', error);
+            console.error('Error:', error);
+            setStatusMessage({ type: 'error', text: 'Error submitting the update. Please try again.' });
         }
-      };
+    };
+
     return (
         <div className={styles.container}>
             <h1 className={styles.title}>Submit an Update</h1>
@@ -104,8 +121,8 @@ const SubmitUpdate: React.FC = () => {
                     required
                 >
                     <option value="">Select Update Type</option>
-                    <option value="building">New Building</option>
-                    <option value="road">New Road</option>
+                    <option value="new building">New Building</option>
+                    <option value="new road">New Road</option>
                     <option value="other">Other</option>
                 </select>
                 <textarea
@@ -127,6 +144,17 @@ const SubmitUpdate: React.FC = () => {
                     Submit
                 </button>
             </form>
+            {statusMessage && (
+                <div
+                    className={
+                        statusMessage.type === 'success'
+                            ? styles.successMessage
+                            : styles.errorMessage
+                    }
+                >
+                    {statusMessage.text}
+                </div>
+            )}
         </div>
     );
 };

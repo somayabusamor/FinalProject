@@ -9,18 +9,21 @@ declare global {
 const HomePage: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [startLocation, setStartLocation] = useState("");
-  const [destination, setDestination] = useState("");
-  const [clickedLocation, setClickedLocation] = useState<{ lat: number; lon: number } | null>(null);
+  const [startPoint, setStartPoint] = useState<{ lat: number; lon: number } | null>(null);
+  const [destination, setDestination] = useState<{ lat: number; lon: number } | null>(null);
+  const [route, setRoute] = useState<{ lat: number[]; lon: number[] } | null>(null);
+  const [routeDetails, setRouteDetails] = useState<{ distance: string; duration: string } | null>(null);
+
+  const MAPBOX_TOKEN = "pk.eyJ1Ijoic3JhZWwxMiIsImEiOiJjbTNlYzdqbjcwOXo2MmpxeDB5NjNsdjhzIn0.emm77XYeX3_fQ6q-ihS3VA";
 
   useEffect(() => {
-    // Fetch user's location
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          setLocation({ lat: latitude, lon: longitude });
-          setStartLocation(`${longitude},${latitude}`); // Set the startLocation to the current position
+          const currentLocation = { lat: latitude, lon: longitude };
+          setLocation(currentLocation);
+          setStartPoint(currentLocation); // Initialize the starting point with the current location
         },
         (error) => {
           console.error("Error fetching location:", error);
@@ -31,130 +34,210 @@ const HomePage: React.FC = () => {
     }
   }, []);
 
-  useEffect(() => {
-    if (!mapRef.current || !location) return;
+  const renderMap = () => {
+    if (!mapRef.current || !window.Plotly) return;
 
-    const loadPlotly = async () => {
-      if (!window.Plotly) {
-        const plotlyScript = document.createElement("script");
-        plotlyScript.src = "https://cdn.plot.ly/plotly-latest.min.js";
-        plotlyScript.async = true;
+    const data = [];
 
-        plotlyScript.onload = () => {
-          renderMap();
-        };
+    // Red marker for the starting point
+    if (startPoint) {
+      data.push({
+        type: "scattermapbox",
+        lat: [startPoint.lat],
+        lon: [startPoint.lon],
+        text: ["Start Point"],
+        mode: "markers",
+        marker: { size: 14, color: "red" },
+      });
+    }
 
-        document.body.appendChild(plotlyScript);
-      } else {
-        renderMap();
+    // Green marker for the destination
+    if (destination) {
+      data.push({
+        type: "scattermapbox",
+        lat: [destination.lat],
+        lon: [destination.lon],
+        text: ["Destination"],
+        mode: "markers",
+        marker: { size: 14, color: "green" },
+      });
+    }
+
+    // Add the route as a line if it exists
+    if (route) {
+      data.push({
+        type: "scattermapbox",
+        lat: route.lat,
+        lon: route.lon,
+        mode: "lines",
+        line: { width: 4, color: "blue" },
+      });
+    }
+
+    window.Plotly.newPlot(
+      mapRef.current,
+      data,
+      {
+        mapbox: {
+          style: "open-street-map",
+          center: startPoint || location || undefined,
+          zoom: 12,
+        },
+        margin: { t: 0, b: 0, l: 0, r: 0 },
       }
-    };
+    );
+  };
+  const fetchRoute = async () => {
+    if (!location || !destination) return;
+  
+    const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${location.lon},${location.lat};${destination.lon},${destination.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+    try {
+      const response = await fetch(url);
+      const data = await response.json();
+      const coordinates = data.routes[0].geometry.coordinates;
+  
+      // Convert coordinates into separate latitude and longitude arrays
+      const lat = coordinates.map((coord: [number, number]) => coord[1]);
+      const lon = coordinates.map((coord: [number, number]) => coord[0]);
+  
+      setRoute({ lat, lon });
+  
+      // Extract distance and duration details
+      const distance = (data.routes[0].distance / 1000).toFixed(2) + " km";
+      const duration = Math.round(data.routes[0].duration / 60) + " min";
+  
+      setRouteDetails({ distance, duration });
+    } catch (error) {
+      console.error("Error fetching route:", error);
+    }
+  };
+  
+  useEffect(renderMap, [startPoint, destination, route]);
 
-    const renderMap = () => {
-        window.Plotly.newPlot(mapRef.current, [
-          {
-            type: 'scattermapbox',
-            lat: [location.lat], // User's latitude
-            lon: [location.lon], // User's longitude
-            text: ['You are here!'],
-            mode: 'markers',
-            marker: { size: 14, color: 'red' }, // Red marker for user's location
-          },
-        ],
-        {
-          mapbox: {
-            style: 'open-street-map',
-            center: { lat: location.lat, lon: location.lon }, // Center map at user's location
-            zoom: 12,
-          },
-          margin: { t: 0, b: 0, l: 0, r: 0 },
-        });
-      };
+  const parseCoordinates = (input: string) => {
+    const [lat, lon] = input.split(",").map(Number);
+    if (!isNaN(lat) && !isNaN(lon)) {
+      return { lat, lon };
+    }
+    return null;
+  };
 
-    loadPlotly();
-  }, [location]);
+  const updateStartPoint = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const startInput = formData.get("startPoint") as string;
 
-  const handleSubmit = () => {
-    alert(`Start: ${startLocation}, Destination: ${destination}`);
-    // Logic to use the input values, e.g., show a route on the map
+    const parsedStart = parseCoordinates(startInput);
+    if (parsedStart) {
+      setStartPoint(parsedStart);
+      renderMap(); // Update map immediately after setting the starting point
+    }
+  };
+
+  const updateDestination = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const destInput = formData.get("destination") as string;
+
+    const parsedDest = parseCoordinates(destInput);
+    if (parsedDest) {
+      setDestination(parsedDest);
+      renderMap(); // Update map immediately after setting destination
+    }
+  };
+
+  const focusOnPoint = (point: { lat: number; lon: number } | null) => {
+    if (!mapRef.current || !point || !window.Plotly) return;
+
+    window.Plotly.relayout(mapRef.current, {
+      "mapbox.center": { lat: point.lat, lon: point.lon },
+      "mapbox.zoom": 14,
+    });
   };
 
   return (
-    <div style={{ position: "relative", width: "100vw", height: "100vh" }}>
-      {/* Map Background */}
+    <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
+      {/* Top Half: Map */}
       <div
         ref={mapRef}
         style={{
-          position: "absolute",
-          top: 0,
-          left: 0,
           width: "100%",
-          height: "100%",
-          zIndex: -1,
+          height: "50%",
+          backgroundColor: "lightgray",
         }}
       ></div>
 
-      {/* Foreground Content */}
+      {/* Bottom Half: Buttons/Form */}
       <div
         style={{
-          position: "relative",
-          zIndex: 1,
-          color: "white",
+          width: "100%",
+          height: "50%",
+          backgroundColor: "#f9f9f9",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
           padding: "20px",
-          textAlign: "center",
-          textShadow: "1px 1px 3px black",
         }}
       >
-        <h1>Interactive Map</h1>
+        <form onSubmit={updateStartPoint} style={{ textAlign: "center", marginBottom: "20px" }}>
+          <label>
+            Starting Point Coordinates (lat,lon):
+            <input
+              type="text"
+              name="startPoint"
+              placeholder="e.g., 40.7128,-74.0060"
+              defaultValue={startPoint ? `${startPoint.lat},${startPoint.lon}` : ""}
+              required
+              style={{ margin: "10px" }}
+            />
+          </label>
+          <button type="submit" style={{ padding: "10px 20px", marginTop: "10px" }}>
+            Set Starting Point
+          </button>
+        </form>
+        <form onSubmit={updateDestination} style={{ textAlign: "center" }}>
+          <label>
+            Destination Coordinates (lat,lon):
+            <input
+              type="text"
+              name="destination"
+              placeholder="e.g., 40.7128,-74.0060"
+              required
+              style={{ margin: "10px" }}
+            />
+          </label>
+          <button type="submit" style={{ padding: "10px 20px", marginTop: "10px" }}>
+            Set Destination
+          </button>
+        </form>
+        <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
+          <button
+            onClick={() => focusOnPoint(startPoint)}
+            style={{ padding: "10px 20px", backgroundColor: "red", color: "white" }}
+          >
+            Go to Start
+          </button>
+          <button
+            onClick={() => focusOnPoint(destination)}
+            style={{ padding: "10px 20px", backgroundColor: "green", color: "white" }}
+          >
+            Go to Destination
+          </button>
+          <button
+  onClick={fetchRoute}
+  style={{
+    marginTop: "20px",
+    padding: "10px 20px",
+    backgroundColor: "blue",
+    color: "white",
+    borderRadius: "5px",
+  }}
+>
+  Show the Road
+</button>
 
-        {/* Labels and Inputs */}
-        <div style={{ marginBottom: "20px", display: "flex", flexDirection: "column", gap: "10px" }}>
-          <div>
-            <label htmlFor="startLocation">Starting Point:</label>
-            <input
-              type="text"
-              id="startLocation"
-              value={startLocation}
-              onChange={(e) => setStartLocation(e.target.value)}
-              placeholder="Enter start location"
-              style={{ marginLeft: "10px", padding: "5px" }}
-            />
-          </div>
-          <div>
-            <label htmlFor="destination">Destination:</label>
-            <input
-              type="text"
-              id="destination"
-              value={destination}
-              onChange={(e) => setDestination(e.target.value)}
-              placeholder="Enter destination"
-              style={{ marginLeft: "10px", padding: "5px" }}
-            />
-          </div>
         </div>
-
-        {/* Button */}
-        <button
-          onClick={handleSubmit}
-          style={{
-            padding: "10px 20px",
-            background: "green",
-            color: "black",
-            border: "none",
-            borderRadius: "5px",
-          }}
-        >
-          Submit
-        </button>
-
-        {/* Display clicked location */}
-        {clickedLocation && (
-          <div style={{ marginTop: "20px", color: "white" }}>
-            <h3>Clicked Location:</h3>
-            <p>Latitude: {clickedLocation.lat}</p>
-            <p>Longitude: {clickedLocation.lon}</p>
-          </div>
-        )}
       </div>
     </div>
   );
