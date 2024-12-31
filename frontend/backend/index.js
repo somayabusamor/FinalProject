@@ -1,20 +1,49 @@
 const express = require('express');
 const app = express();
 const multer = require('multer');
-const upload = multer({ dest: 'uploads/' });
-const cors = require('cors');
+const path = require('path');
+const Update = require('./models/Update');
+const updateRoute = require('./routes/Update'); // Import the update route
+
+const app = express();
+const PORT = 8081;
+
+// Start the server
+app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+
+// Middleware
 app.use(cors());
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-app.post('/api/submitUpdate', (req, res) => {
+// Multer configuration
+const storage = multer.diskStorage({
+    destination: (req, file, cb) => {
+        cb(null, 'uploads/');
+    },
+    filename: (req, file, cb) => {
+        cb(null, Date.now() + path.extname(file.originalname));
+    },
+});
+const upload = multer({ storage });
+
+// POST endpoint to handle the update submission
+app.post('/api', upload.array('images', 10), async (req, res) => {
     try {
         const { firstName, lastName, villageName, updateType, description } = req.body;
-        const images = req.files.map((file) => `/uploads/${file.filename}`);
+        const images = req.files.map((file) => `/uploads/${file.filename}`); // Store full path
 
-        // Save update logic (e.g., database save)
+        const newUpdate = new Update({
+            firstName,
+            lastName,
+            villageName,
+            updateType,
+            description,
+            images,
+        });
 
+        await newUpdate.save();
         res.status(200).json({ message: 'Update submitted successfully', newUpdate });
     } catch (error) {
         console.error(error);
@@ -22,17 +51,15 @@ app.post('/api/submitUpdate', (req, res) => {
     }
 });
 
-app.listen(8081, () => console.log('Server running on port 8081'));
-
+// Use the update route
+app.use('/api/update', updateRoute);
 
 // Connect to MongoDB
 mongoose
-  .connect(process.env.DB, {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-    useFindAndModify: false
-
-  })
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
-
+    .connect(process.env.DB, {
+        useNewUrlParser: true,
+        useUnifiedTopology: true,
+        useFindAndModify: false,
+    })
+    .then(() => console.log('MongoDB connected'))
+    .catch((err) => console.error('MongoDB connection error:', err));
