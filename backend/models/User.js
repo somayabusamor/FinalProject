@@ -15,19 +15,18 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Validation schema
+// Validation schem\
 const validateUser = (data) => {
   const schema = Joi.object({
     name: Joi.string().min(3).max(50).required().label("Name"),
     email: Joi.string().email().required().label("Email"),
     password: Joi.string().min(6).required().label("Password"),
-    role: Joi.string()
-      .valid('locale', 'emregincy') // Validate roles
-      .required()
-      .label("Role"),
+    confirmPassword: Joi.string().valid(Joi.ref("password")).required().label("Confirm Password"),
+    role: Joi.string().valid("local", "emergency").required().label("Role"),
   });
   return schema.validate(data);
 };
+
 
 // Export the User model and validation function
 const User = mongoose.model('User', userSchema);

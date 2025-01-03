@@ -4,37 +4,34 @@ const User = require("../models/User"); // Assuming you have a User mode
 const bcrypt = require("bcrypt");
 router.post("/signup", async (req, res) => {
   try {
-    const { error } = validate(req.body);
+    const { error } = validateUser(req.body);
     if (error) {
-      console.log("Validation error:", error.details[0].message);
       return res.status(400).send({ message: error.details[0].message });
     }
 
-    // Check if password matches confirmPassword
-    if (req.body.password !== req.body.confirmPassword) {
-      return res.status(400).send({ message: "Passwords do not match" });
+    const existingUser = await User.findOne({ email: req.body.email });
+    if (existingUser) {
+      return res.status(400).send({ message: "User already exists" });
     }
 
+    const hashedPassword = await bcrypt.hash(req.body.password, 10);
+
     const user = new User({
-     name: req.body.name,
+      name: req.body.name,
       email: req.body.email,
-      password: req.body.password,
+      password: hashedPassword,
       role: req.body.role,
     });
 
     await user.save();
 
-    const token = user.generateAuthToken();
-    res.status(200).send({
-      token,
-      role: user.role,
-    });
-
+    res.status(201).send({ message: "User created successfully" });
   } catch (error) {
-    console.log("Server error:", error);
+    console.error("Signup error:", error);
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
+
 
 router.post("/", async (req, res) => {
   const { name, email, password, role } = req.body;

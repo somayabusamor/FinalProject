@@ -36,20 +36,24 @@ const Signup = () => {
     try {
       const url = `http://localhost:8082/api/signup`;
       const { data: res } = await axios.post(url, data);
-
-      await emailjs.send(
-        "service_061uyjc",
-        "template_qejy7ja",
-        { to_email: data.email },
-        "Ac1RL4TgJZVZgpMSY"
-      );
+      try {
+        await emailjs.send(
+          "service_061uyjc",
+          "template_qejy7ja",
+          { to_email: data.email },
+          "Ac1RL4TgJZVZgpMSY"
+        );
+      } catch (emailError) {
+        console.error("EmailJS error:", emailError);
+      }
       window.location.href = "/login";
       console.log("User created successfully:", res.message);
     } catch (error: any) {
+      console.error('API call failed:', error);
       if (error.response) {
-        setError(error.response.data.message);
+        setError(error.response.data.message); // Display server-side error message
       } else {
-        console.error("An unexpected error occurred:", error.message);
+        setError('An unexpected error occurred'); // Generic error message
       }
     }
   };

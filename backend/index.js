@@ -5,6 +5,7 @@ const cors = require('cors');
 const multer = require('multer');
 const path = require('path');
 const { User } = require('./models/User');
+const bcrypt = require('bcryptjs');
 
 const Update = require('./models/Update');
 const updateRoute = require('./routes/Update'); // Import the update route
@@ -12,8 +13,9 @@ const usersRoutes = require('./routes/users');
 const app = express();
 // Start the server
 
-// Middleware
-app.use(cors());
+// Middlewareapp.use(cors({ origin: true, credentials: true }));
+
+app.use(cors({ origin: true, credentials: true }));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -26,31 +28,45 @@ const storage = multer.diskStorage({
         cb(null, Date.now() + path.extname(file.originalname));
     },
 });
-app.use("/api", usersRoutes);
-
-// POST endpoint to handle the update submission
-// Use the update route
-app.use('/api/update', updateRoute);
-console.log('MongoDB URI:', process.env.DB);
-const addTestUser = async () => {
+// Remove the duplicate POST /api/signup route
+app.post("/api/signup", async (req, res) => {
     try {
-        const existingUser = await User.findOne({ email: 'test@example.com' });
-        if (!existingUser) {
-            const testUser = new User({
-                name: 'Test User',
-                email: 'test@example.com',
-                password: 'password123', // In production, hash the password
-                role: 'local', // Provide a role
-            });
-            const savedUser = await testUser.save();
-            console.log('Test user created successfully:', savedUser);
-        } else {
-            console.log('Test user already exists:', existingUser);
-        }
+      const { name, email, password, confirmPassword, role } = req.body;
+  
+      // Validate input
+      if (!name || !email || !password || !confirmPassword || !role) {
+        return res.status(400).json({ message: "All fields are required" });
+      }
+      if (password !== confirmPassword) {
+        return res.status(400).json({ message: "Passwords do not match" });
+      }
+  
+      // Check if user already exists
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Email already registered" });
+      }
+  
+      // Hash password
+      const hashedPassword = await bcrypt.hash(password, 10);
+  
+      // Create new user
+      const newUser = new User({
+        name,
+        email,
+        password: hashedPassword,
+        role,
+      });
+  
+      await newUser.save();
+  
+      res.status(201).json({ message: "User registered successfully" });
     } catch (error) {
-        console.error('Error creating test user:', error);
+      console.error("Signup error:", error);
+      res.status(500).json({ message: "Server error" });
     }
-};
+  });
+  
 // New route to test adding a user
 app.get('/api/test-user', async (req, res) => {
     try {
@@ -60,14 +76,12 @@ app.get('/api/test-user', async (req, res) => {
         res.status(500).send('Error adding test user.');
     }
 });
-mongoose
-    .connect(process.env.DB)
-    mongoose
-    .connect(process.env.DB)
-    .then(() => {
-        console.log('MongoDB connected successfully');
-    })
+mongoose.connect(process.env.DB)
+    .then(() => {console.log('MongoDB connected successfully');})
     .catch((err) => console.error('MongoDB connection error:', err));
     const PORT = process.env.PORT ||8082; // 0 means any available port
 
-    app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+    app.listen(8082, () => {
+        console.log('Server running on http://localhost:8082');
+    });
+    
