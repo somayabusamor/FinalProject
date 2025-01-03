@@ -1,37 +1,14 @@
-const mongoose = require("mongoose");
-const Joi = require("joi");
+const mongoose = require('mongoose');
 
-const UpdateSchema = new mongoose.Schema({
+const updateSchema = new mongoose.Schema({
   firstName: { type: String, required: true },
   lastName: { type: String, required: true },
   villageName: { type: String, required: true },
-  updateType: {
-    type: String,
-    enum: ["new building", "new road", "other"],
-    required: true,
-  },
+  updateType: { type: String, required: true },
   description: { type: String, required: true },
-  //images: [{ type: String }], // Array of image paths
- // Automatically add a timestam
+  images: { type: [String], required: true }, // Store image paths as an array of strings
 });
 
-// Validation schema
-const validateUpdate = (data) => {
-  const schema = Joi.object({
-    firstName: Joi.string().required().label("First Name"),
-    lastName: Joi.string().required().label("Last Name"),
-    villageName: Joi.string().required().label("Village Name"),
-    updateType: Joi.string()
-      .valid("new building", "new road", "other")
-      .required()
-      .label("Update Type"),
-    description: Joi.string().required().label("Description"),
-  // images: Joi.array().items(Joi.string()).label("Images"),
-  });
-  return schema.validate(data);
-};
+const Update = mongoose.model('Update', updateSchema);
 
-// Create and export the model
-const Update = mongoose.model("Update", UpdateSchema);
-
-module.exports = { Update, validateUpdate };
+module.exports = { Update };
