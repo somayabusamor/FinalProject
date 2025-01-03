@@ -1,5 +1,7 @@
 const express = require('express');
-const { Update, validateUpdate } = require('./models/Update');
+//const Update = require('../models/Update');
+
+const { Update,validateUpdate } = require('../models/Update');
 const router = express.Router();
 
 // Update route

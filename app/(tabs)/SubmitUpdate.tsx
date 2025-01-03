@@ -7,7 +7,7 @@ interface FormData {
     villageName: string;
     updateType: string;
     description: string;
-    images: File[] | null;
+    
 }
 
 const SubmitUpdate: React.FC = () => {
@@ -17,7 +17,7 @@ const SubmitUpdate: React.FC = () => {
         villageName: '',
         updateType: '',
         description: '',
-        images: null,
+        
     });
 
     const [statusMessage, setStatusMessage] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
@@ -29,13 +29,6 @@ const SubmitUpdate: React.FC = () => {
         setFormData((prev) => ({ ...prev, [name]: value }));
     };
 
-    const handleFileChange = (e: ChangeEvent<HTMLInputElement>) => {
-        const files = e.target.files;
-        if (files) {
-            setFormData((prev) => ({ ...prev, images: Array.from(files) }));
-        }
-    };
-
     const handleSubmit = async (e: FormEvent) => {
         e.preventDefault();
 
@@ -45,12 +38,6 @@ const SubmitUpdate: React.FC = () => {
         formDataToSend.append('villageName', formData.villageName);
         formDataToSend.append('updateType', formData.updateType);
         formDataToSend.append('description', formData.description);
-
-        if (formData.images) {
-            for (const file of formData.images) {
-                formDataToSend.append('images', file);
-            }
-        }
 
         try {
             const response = await fetch('http://localhost:8081/api', {
@@ -74,7 +61,7 @@ const SubmitUpdate: React.FC = () => {
                 villageName: '',
                 updateType: '',
                 description: '',
-                images: null,
+               // images: null,
             });
         } catch (error) {
             console.error('Error:', error);
@@ -132,13 +119,6 @@ const SubmitUpdate: React.FC = () => {
                     onChange={handleInputChange}
                     className={styles.textarea}
                     required
-                />
-                <input
-                    type="file"
-                    name="images"
-                    onChange={handleFileChange}
-                    className={styles.fileInput}
-                    multiple
                 />
                 <button type="submit" className={styles.submitButton}>
                     Submit

@@ -26,7 +26,7 @@ const validateUpdate = (data) => {
       .required()
       .label("Update Type"),
     description: Joi.string().required().label("Description"),
-    images: Joi.array().items(Joi.string()).label("Images"),
+  // images: Joi.array().items(Joi.string()).label("Images"),
   });
   return schema.validate(data);
 };
