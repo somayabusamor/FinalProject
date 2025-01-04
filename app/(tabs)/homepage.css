@@ -3,7 +3,7 @@
 .left-container {
   width: 300px;
   padding: 20px;
-  background-image: url('/frontend/assets//images/map.jpg'); /* Replace with the path to your image */
+  background-image: url('/frontend/assets/images/map.jpg'); /* Replace with the path to your image */
   background-size: cover; /* Ensures the image covers the entire container */
   background-position: center; /* Centers the image */
   display: flex;
