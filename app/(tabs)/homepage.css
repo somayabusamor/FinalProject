@@ -1,0 +1,65 @@
+/* Style for the left-side container */
+/* Style for the left-side container */
+.left-container {
+  width: 300px;
+  padding: 20px;
+  background-image: url('/frontend/assets//images/map.jpg'); /* Replace with the path to your image */
+  background-size: cover; /* Ensures the image covers the entire container */
+  background-position: center; /* Centers the image */
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  gap: 20px;
+  border-right: 1px solid #ddd; /* Optional, adds a border for separation */
+}
+
+/* Style for the left-side container */
+/* General button styling */
+.left-container button {
+  padding: 10px;
+  width: 100%;
+  border: none;
+  border-radius: 5px;
+  font-size: 16px;
+  font-weight: bold;
+  cursor: pointer;
+  transition: transform 0.2s, background-color 0.3s ease-in-out;
+}
+
+/* Button colors */
+.left-container button:nth-child(3) {
+  background-color: #ff5252; /* Red */
+  color: white;
+}
+.left-container button:nth-child(4) {
+  background-color: #4caf50; /* Green */
+  color: white;
+}
+.left-container button:nth-child(5) {
+  background-color: #2196f3; /* Blue */
+  color: white;
+}
+
+/* Hover effect for buttons */
+.left-container button:hover {
+  transform: scale(1.05);
+  background-color: #333; /* Darken background on hover */
+  color: #fff;
+}
+
+/* Input styling */
+.left-container input {
+  width: 100%;
+  margin-top: 5px;
+  padding: 10px;
+  border: 1px solid #ccc;
+  border-radius: 5px;
+  font-size: 14px;
+}
+
+/* Label styling */
+.left-container label {
+  font-weight: bold;
+  font-size: 14px;
+  color: #333;
+}

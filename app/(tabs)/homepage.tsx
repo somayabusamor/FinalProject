@@ -1,4 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
+import './homepage.css';
 
 declare global {
   interface Window {
@@ -14,7 +15,7 @@ const HomePage: React.FC = () => {
   const [route, setRoute] = useState<{ lat: number[]; lon: number[] } | null>(null);
   const [routeDetails, setRouteDetails] = useState<{ distance: string; duration: string } | null>(null);
 
-  const MAPBOX_TOKEN = "pk.eyJ1Ijoic3JhZWwxMiIsImEiOiJjbTNlYzdqbjcwOXo2MmpxeDB5NjNsdjhzIn0.emm77XYeX3_fQ6q-ihS3VA";
+  const MAPBOX_TOKEN = "YOUR_MAPBOX_TOKEN";
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -39,7 +40,6 @@ const HomePage: React.FC = () => {
 
     const data = [];
 
-    // Red marker for the starting point
     if (startPoint) {
       data.push({
         type: "scattermapbox",
@@ -51,7 +51,6 @@ const HomePage: React.FC = () => {
       });
     }
 
-    // Green marker for the destination
     if (destination) {
       data.push({
         type: "scattermapbox",
@@ -63,7 +62,6 @@ const HomePage: React.FC = () => {
       });
     }
 
-    // Add the route as a line if it exists
     if (route) {
       data.push({
         type: "scattermapbox",
@@ -87,31 +85,30 @@ const HomePage: React.FC = () => {
       }
     );
   };
+
   const fetchRoute = async () => {
     if (!location || !destination) return;
-  
+
     const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${location.lon},${location.lat};${destination.lon},${destination.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
     try {
       const response = await fetch(url);
       const data = await response.json();
       const coordinates = data.routes[0].geometry.coordinates;
-  
-      // Convert coordinates into separate latitude and longitude arrays
+
       const lat = coordinates.map((coord: [number, number]) => coord[1]);
       const lon = coordinates.map((coord: [number, number]) => coord[0]);
-  
+
       setRoute({ lat, lon });
-  
-      // Extract distance and duration details
+
       const distance = (data.routes[0].distance / 1000).toFixed(2) + " km";
       const duration = Math.round(data.routes[0].duration / 60) + " min";
-  
+
       setRouteDetails({ distance, duration });
     } catch (error) {
       console.error("Error fetching route:", error);
     }
   };
-  
+
   useEffect(renderMap, [startPoint, destination, route]);
 
   const parseCoordinates = (input: string) => {
@@ -130,7 +127,7 @@ const HomePage: React.FC = () => {
     const parsedStart = parseCoordinates(startInput);
     if (parsedStart) {
       setStartPoint(parsedStart);
-      renderMap(); // Update map immediately after setting the starting point
+      renderMap();
     }
   };
 
@@ -142,7 +139,7 @@ const HomePage: React.FC = () => {
     const parsedDest = parseCoordinates(destInput);
     if (parsedDest) {
       setDestination(parsedDest);
-      renderMap(); // Update map immediately after setting destination
+      renderMap();
     }
   };
 
@@ -155,91 +152,38 @@ const HomePage: React.FC = () => {
     });
   };
 
-  return (
-    <div style={{ width: "100vw", height: "100vh", display: "flex", flexDirection: "column" }}>
-      {/* Top Half: Map */}
-      <div
-        ref={mapRef}
-        style={{
-          width: "100%",
-          height: "50%",
-          backgroundColor: "lightgray",
-        }}
-      ></div>
+  return(
+    <div className="left-container">
+  <form onSubmit={updateStartPoint}>
+    <label>
+      Starting Point Coordinates (lat,lon):
+      <input
+        type="text"
+        name="startPoint"
+        placeholder="e.g., 40.7128,-74.0060"
+        defaultValue={startPoint ? `${startPoint.lat},${startPoint.lon}` : ""}
+        required
+      />
+    </label>
+    <button type="submit">Set Starting Point</button>
+  </form>
+  <form onSubmit={updateDestination}>
+    <label>
+      Destination Coordinates (lat,lon):
+      <input
+        type="text"
+        name="destination"
+        placeholder="e.g., 40.7128,-74.0060"
+        required
+      />
+    </label>
+    <button type="submit">Set Destination</button>
+  </form>
+  <button onClick={() => focusOnPoint(startPoint)}>Go to Start</button>
+  <button onClick={() => focusOnPoint(destination)}>Go to Destination</button>
+  <button onClick={fetchRoute}>Show the Road</button>
+</div>
 
-      {/* Bottom Half: Buttons/Form */}
-      <div
-        style={{
-          width: "100%",
-          height: "50%",
-          backgroundColor: "#f9f9f9",
-          display: "flex",
-          flexDirection: "column",
-          justifyContent: "center",
-          alignItems: "center",
-          padding: "20px",
-        }}
-      >
-        <form onSubmit={updateStartPoint} style={{ textAlign: "center", marginBottom: "20px" }}>
-          <label>
-            Starting Point Coordinates (lat,lon):
-            <input
-              type="text"
-              name="startPoint"
-              placeholder="e.g., 40.7128,-74.0060"
-              defaultValue={startPoint ? `${startPoint.lat},${startPoint.lon}` : ""}
-              required
-              style={{ margin: "10px" }}
-            />
-          </label>
-          <button type="submit" style={{ padding: "10px 20px", marginTop: "10px" }}>
-            Set Starting Point
-          </button>
-        </form>
-        <form onSubmit={updateDestination} style={{ textAlign: "center" }}>
-          <label>
-            Destination Coordinates (lat,lon):
-            <input
-              type="text"
-              name="destination"
-              placeholder="e.g., 40.7128,-74.0060"
-              required
-              style={{ margin: "10px" }}
-            />
-          </label>
-          <button type="submit" style={{ padding: "10px 20px", marginTop: "10px" }}>
-            Set Destination
-          </button>
-        </form>
-        <div style={{ display: "flex", gap: "20px", marginTop: "20px" }}>
-          <button
-            onClick={() => focusOnPoint(startPoint)}
-            style={{ padding: "10px 20px", backgroundColor: "red", color: "white" }}
-          >
-            Go to Start
-          </button>
-          <button
-            onClick={() => focusOnPoint(destination)}
-            style={{ padding: "10px 20px", backgroundColor: "green", color: "white" }}
-          >
-            Go to Destination
-          </button>
-          <button
-  onClick={fetchRoute}
-  style={{
-    marginTop: "20px",
-    padding: "10px 20px",
-    backgroundColor: "blue",
-    color: "white",
-    borderRadius: "5px",
-  }}
->
-  Show the Road
-</button>
-
-        </div>
-      </div>
-    </div>
   );
 };
 

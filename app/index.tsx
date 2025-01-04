@@ -7,13 +7,8 @@ export default function MainIndex() {
 
   return (
     
-    <ImageBackground
-      source={require('../frontend/assets/images/mp.jpg') } // Replace with your image URL
-      style={styles.background}
-      resizeMode="cover"
-    >
       <View style={styles.container}>
-        <Text style={styles.title}>Welcome to Negen Pulse App</Text>
+        <Text style={styles.title}>Welcome to Negev Pulse App</Text>
 
         <TouchableOpacity style={styles.button} onPress={() => router.push('/login')}>
           <Text style={styles.buttonText}>Sign In</Text>
@@ -27,7 +22,6 @@ export default function MainIndex() {
           <Text style={styles.buttonText}>Sign Up</Text>
         </TouchableOpacity>
       </View>
-    </ImageBackground>
   );
 }
 
