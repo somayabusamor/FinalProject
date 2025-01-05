@@ -1,0 +1,98 @@
+/* styles/SubmitUpdate.css */
+body {
+  background-image: url('/frontend/assets/images/imagesVillage.png');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  height: 100vh; /* Ensure it covers the full viewport */
+  margin: 0; /* Remove default margin */
+  font-family: Arial, sans-serif; /* Optional: Improve font appearance */
+}
+
+.container {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    padding: 30px;
+    background-color: #f4f7fc;
+    border-radius: 10px;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    max-width: 600px;
+    margin: 0 auto;
+  }
+  
+  h1 {
+    color: #4b6cb7;
+    font-size: 2rem;
+    margin-bottom: 20px;
+  }
+  
+  .form-group {
+    margin-bottom: 15px;
+    width: 100%;
+  }
+  
+  label {
+    font-size: 1rem;
+    color: #333;
+  }
+  
+  input,
+  select,
+  textarea {
+    width: 100%;
+    padding: 12px;
+    font-size: 1rem;
+    margin-top: 8px;
+    border-radius: 8px;
+    border: 1px solid #ddd;
+    background-color: #fff;
+  }
+  
+  input[type="file"] {
+    padding: 5px;
+    background-color: #e6e6e6;
+  }
+  
+  button {
+    background-color: #4b6cb7;
+    color: #fff;
+    padding: 10px 20px;
+    border: none;
+    font-size: 1.1rem;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s ease;
+  }
+  
+  button:hover {
+    background-color: #365fa9;
+  }
+  
+  .error-message {
+    color: #ff0000;
+    font-size: 0.9rem;
+    margin-top: 10px;
+  }
+  
+  .file-preview {
+    margin-top: 10px;
+    display: flex;
+    gap: 10px;
+  }
+  
+  .file-preview img {
+    max-width: 100px;
+    max-height: 100px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  
+  @media (max-width: 768px) {
+    .container {
+      padding: 20px;
+      width: 90%;
+    }
+  }
+  
