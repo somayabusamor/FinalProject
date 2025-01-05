@@ -16,8 +16,7 @@ const HomePage: React.FC = () => {
   const [route, setRoute] = useState<{ lat: number[]; lon: number[] } | null>(null);
   const [routeDetails, setRouteDetails] = useState<{ distance: string; duration: string } | null>(null);
 
-  //const MAPBOX_TOKEN = process.env.mapbox_token;
-  const MAPBOX_TOKEN = "pk.eyJ1Ijoic3JhZWwxMiIsImEiOiJjbTNlYzdqbjcwOXo2MmpxeDB5NjNsdjhzIn0.emm77XYeX3_fQ6q-ihS3VA";
+  const MAPBOX_TOKEN = process.env.mapbox_token;
 
   useEffect(() => {
     if ("geolocation" in navigator) {
@@ -94,7 +93,7 @@ const HomePage: React.FC = () => {
       alert("Please set both the start point and the destination.");
       return;
     }
-const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lon},${startPoint.lat};${destination.lon},${destination.lat}?geometries=geojson&access_token=${MAPBOX_TOKEN}`;
+const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lon},${startPoint.lat};${destination.lon},${destination.lat}?alternatives=false&geometries=geojson&language=en&overview=full&steps=true&access_token=pk.eyJ1Ijoic3JhZWwxMiIsImEiOiJjbTVpZmk1angwd2puMmlzNzliendwcDZhIn0.K1gCuh7b0tNdi58FGEhBcA`;
 
 
     try {
@@ -104,6 +103,8 @@ const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lo
       }
 
       const data = await response.json();
+      console.log(data);  // Log the response to check the data structure
+
       const routeCoordinates = data.routes[0].geometry.coordinates;
       const distance = (data.routes[0].distance / 1000).toFixed(2); // Distance in km
       const duration = (data.routes[0].duration / 60).toFixed(2);   // Duration in minutes
@@ -116,23 +117,9 @@ const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lo
       setRouteDetails({
         distance: `${distance} km`,
         duration: `${duration} minutes`,
-      });
-
-      // Adjust the map bounds to fit the route
-      const bounds = {
-        lats: routeCoordinates.map((coord: number[]) => coord[1]),
-        lons: routeCoordinates.map((coord: number[]) => coord[0]),
-      };
-
-      const [minLat, maxLat] = [Math.min(...bounds.lats), Math.max(...bounds.lats)];
-      const [minLon, maxLon] = [Math.min(...bounds.lons), Math.max(...bounds.lons)];
-
-      if (mapRef.current && window.Plotly) {
-        window.Plotly.relayout(mapRef.current, {
-          "mapbox.bounds": [[minLon, minLat], [maxLon, maxLat]],
-        });
-      }
-    } catch (error) {
+      });        
+          }
+     catch (error) {
       console.error("Error fetching route:", error);
       alert("Failed to fetch the route. Please try again.");
     }
