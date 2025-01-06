@@ -11,9 +11,8 @@ const HomePage: React.FC = () => {
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [clickedLocation, setClickedLocation] = useState<{ lat: number; lon: number } | null>(null);
 
-  const MAPBOX_TOKEN = "YOUR_MAPBOX_ACCESS_TOKEN";
-
   useEffect(() => {
+    // Get user's current location
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
@@ -33,6 +32,7 @@ const HomePage: React.FC = () => {
     if (!mapRef.current || !location) return;
 
     const loadPlotly = async () => {
+      // Dynamically load Plotly if not already loaded
       if (!window.Plotly) {
         const plotlyScript = document.createElement("script");
         plotlyScript.src = "https://cdn.plot.ly/plotly-latest.min.js";
@@ -67,7 +67,7 @@ const HomePage: React.FC = () => {
         data,
         {
           mapbox: {
-            style: "open-street-map",
+            style: "open-street-map", // Use OpenStreetMap style
             center: { lat: location.lat, lon: location.lon },
             zoom: 12,
           },
@@ -115,7 +115,6 @@ const HomePage: React.FC = () => {
           textShadow: "1px 1px 3px black",
         }}
       >
-        <h1>Interactive Map</h1>
         {clickedLocation && (
           <p>
             <strong>Clicked Location:</strong> Latitude: {clickedLocation.lat}, Longitude: {clickedLocation.lon}
