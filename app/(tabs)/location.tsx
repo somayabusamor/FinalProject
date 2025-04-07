@@ -32,7 +32,6 @@ const HomePage: React.FC = () => {
     if (!mapRef.current || !location) return;
 
     const loadPlotly = async () => {
-      // Dynamically load Plotly if not already loaded
       if (!window.Plotly) {
         const plotlyScript = document.createElement("script");
         plotlyScript.src = "https://cdn.plot.ly/plotly-latest.min.js";
@@ -67,7 +66,7 @@ const HomePage: React.FC = () => {
         data,
         {
           mapbox: {
-            style: "open-street-map", // Use OpenStreetMap style
+            style: "open-street-map",
             center: { lat: location.lat, lon: location.lon },
             zoom: 12,
           },
@@ -77,13 +76,26 @@ const HomePage: React.FC = () => {
     };
 
     const addClickHandler = () => {
-      mapRef.current?.addEventListener("plotly_click", (event: any) => {
-        const clickedData = event.points[0];
-        const lat = clickedData.lat;
-        const lon = clickedData.lon;
+      if (mapRef.current) {
+        // Listen for plotly_click event on mapRef using native addEventListener
+        mapRef.current.addEventListener("plotly_click", (event: any) => {
+          const clickedData = event.points[0];
+          const lat = clickedData.lat;
+          const lon = clickedData.lon;
 
-        setClickedLocation({ lat, lon });
-      });
+          setClickedLocation({ lat, lon });
+
+          // Add new landmark on the map
+          window.Plotly.addTraces(mapRef.current, {
+            type: "scattermapbox",
+            lat: [lat],
+            lon: [lon],
+            text: ["Landmark! 📍"],
+            mode: "markers",
+            marker: { size: 10, color: "blue" },
+          });
+        });
+      }
     };
 
     loadPlotly();
@@ -100,26 +112,42 @@ const HomePage: React.FC = () => {
           left: 0,
           width: "100%",
           height: "100%",
-          zIndex: -1,
+          zIndex: 0, // ✅ show the map
         }}
       ></div>
 
-      {/* Foreground Content */}
+      {/* Floating Box for Clicked Location */}
+      {clickedLocation && (
+        <div
+          style={{
+            position: "absolute",
+            top: 20,
+            right: 20,
+            backgroundColor: "white",
+            padding: "10px 15px",
+            borderRadius: "8px",
+            boxShadow: "0px 0px 10px rgba(0,0,0,0.2)",
+            zIndex: 1,
+          }}
+        >
+          <h4>Clicked Location:</h4>
+          <p>Lat: {clickedLocation.lat.toFixed(4)}</p>
+          <p>Lon: {clickedLocation.lon.toFixed(4)}</p>
+        </div>
+      )}
+
+      {/* Optional Foreground Content */}
       <div
         style={{
           position: "relative",
           zIndex: 1,
-          color: "Black",
+          color: "black",
           padding: "20px",
           textAlign: "center",
-          textShadow: "1px 1px 3px black",
         }}
       >
-        {clickedLocation && (
-          <p>
-            <strong>Clicked Location:</strong> Latitude: {clickedLocation.lat}, Longitude: {clickedLocation.lon}
-          </p>
-        )}
+        <h1>Welcome to the Location Page 🌍</h1>
+        <p>Click anywhere to add landmarks!</p>
       </div>
     </div>
   );
