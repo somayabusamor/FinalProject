@@ -1,6 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const User = require("../models/User"); // Assuming you have a User mode
+const { User, validateUser } = require("../models/User");
 const bcrypt = require("bcrypt");
 router.post("/signup", async (req, res) => {
   try {
@@ -57,6 +57,34 @@ router.post("/", async (req, res) => {
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: "Internal server error" });
+  }
+});
+router.post('/login', async (req, res) => {
+  const { email, password } = req.body;
+
+  try {
+    const existingUser = await User.findOne({ email });
+    if (!existingUser) {
+      return res.status(400).json({ message: "البريد أو كلمة المرور غير صحيحة" });
+    }
+
+    const isMatch = await bcrypt.compare(password, existingUser.password);
+    if (!isMatch) {
+      return res.status(400).json({ message: "البريد أو كلمة المرور غير صحيحة" });
+    }
+
+    // إذا البيانات صحيحة، نرجّع بيانات المستخدم ومنها الدور
+    return res.status(200).json({
+      message: "تم تسجيل الدخول بنجاح",
+      user: {
+        name: existingUser.name,
+        email: existingUser.email,
+        role: existingUser.role,
+      },
+    });
+  } catch (err) {
+    console.error("خطأ في تسجيل الدخول:", err);
+    return res.status(500).json({ message: "خطأ في الخادم" });
   }
 });
 

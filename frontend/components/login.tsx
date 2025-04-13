@@ -1,18 +1,42 @@
 import React, { useState } from 'react';
 import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
+import axios, { AxiosError } from 'axios';
 
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const handleLogin = () => {
-    // Add your login logic here (e.g., check credentials)
-    console.log(`Email: ${email}, Password: ${password}`);
-    
-    // Redirect to the homepage after login
-    router.push('/(tabs)/homepage');
+  const handleLogin = async () => {
+    try {
+      const response = await axios.post('http://localhost:8082/api/login', {
+        email,
+        password
+      });
+  
+      // احصل على role من الرد (يفترض أن السيرفر يرجعها مع token)
+      const role = response.data.user.role;
+  
+      // توجيه حسب الصلاحية
+      if (role === "local") {
+        router.push('/(tabs)/local');
+      } else if (role === "emergency") {
+        router.push('/(tabs)/homepage');
+      } else if (role === "admin") {
+        router.push('/(tabs)/admin');
+      }
+  
+    } catch (error) {
+      const err = error as AxiosError;
+  
+      // تحقق من وجود response
+      if (err.response) {
+        console.log("Login error response:", err.response.data);
+      } else {
+        console.log("Login error:", err.message);
+      }
+    }
   };
 
   return (

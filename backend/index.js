@@ -24,6 +24,7 @@ app.use(cors({ origin: true, credentials: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use('/api', usersRoutes);
 
 // Define the storage configuration for Multer
 const storage = multer.diskStorage({
@@ -103,6 +104,26 @@ app.post('/api/submitUpdate', upload.array('images', 10), async (req, res) => {
     }
 });
 
+app.post("/api/login", async (req, res) => {
+    try {
+      const { email, password } = req.body;
+      const user = await User.findOne({ email });
+      
+      if (!user) return res.status(404).send({ message: "User not found" });
+  
+      const validPassword = await bcrypt.compare(password, user.password);
+      if (!validPassword) return res.status(400).send({ message: "Invalid password" });
+  
+      // إرجاع بيانات المستخدم بما فيها role
+      res.status(200).send({
+        message: "Logged in successfully",
+        role: user.role,
+        userId: user._id
+      });
+    } catch (error) {
+      res.status(500).send({ message: "Server error" });
+    }
+  });
 // New route to test adding a user
 app.get('/api/test-user', async (req, res) => {
     try {

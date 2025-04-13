@@ -52,5 +52,5 @@ app.post('/api/submitUpdate', upload.array('images', 10), async (req, res) => {
 });
 
 // Start the server
-const PORT = process.env.PORT || 8081;
+const PORT = process.env.PORT || 8082;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
