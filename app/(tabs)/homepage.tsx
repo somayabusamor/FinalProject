@@ -55,6 +55,7 @@ const HomePage: React.FC = () => {
 
   const renderMap = () => {
     if (landmarks.length > 0) {
+      const data: any[] = []; // عرّفت data هنا
       landmarks.forEach((landmark) => {
         data.push({
           type: "scattermapbox",
@@ -65,6 +66,7 @@ const HomePage: React.FC = () => {
           marker: { size: 14, color: "blue" },
         });
       });
+      // كمل باقي رسم الخريطة هنا باستخدام data
     }
     
     if (!mapRef.current || !window.Plotly) return;
