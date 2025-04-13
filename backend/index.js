@@ -8,6 +8,7 @@ const { User } = require('./models/User');
 const { Update } = require('./models/Update'); // Correct import
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
+const landmarksRoute = require('./routes/landmarks'); // راوت اللاند ماركس
 
 const updateRoute = require('./routes/Update'); // Import the update route
 const usersRoutes = require('./routes/users');
@@ -25,6 +26,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', usersRoutes);
+app.use('/api/landmarks', landmarksRoute);
 
 // Define the storage configuration for Multer
 const storage = multer.diskStorage({

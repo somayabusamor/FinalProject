@@ -1,6 +1,8 @@
 import React, { useEffect, useRef, useState } from "react";
 import './homepage.css';
 import mapboxgl from 'mapbox-gl';
+import axios from 'axios';
+import { useRouter } from 'expo-router';
 
 declare global {
   interface Window {
@@ -12,12 +14,27 @@ const HomePage: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
   const [startPoint, setStartPoint] = useState<{ lat: number; lon: number } | null>(null);
+  const router = useRouter(); // useRouter hook from expo-router
+
   const [destination, setDestination] = useState<{ lat: number; lon: number } | null>(null);
   const [route, setRoute] = useState<{ lat: number[]; lon: number[] } | null>(null);
   const [routeDetails, setRouteDetails] = useState<{ distance: string; duration: string } | null>(null);
-
+  const [showAddLandmark, setShowAddLandmark] = useState(false); // حالة لإظهار/إخفاء AddLandmark
   const MAPBOX_TOKEN = process.env.mapbox_token;
-
+  const [landmarks, setLandmarks] = useState<{ lat: number; lon: number; name: string }[]>([]);
+  useEffect(() => {
+    const fetchLandmarks = async () => {
+      try {
+        const response = await axios.get('http://localhost:8082/api/landmarks');
+        console.log(response.data);
+        setLandmarks(response.data); // Update landmarks state
+      } catch (error) {
+        console.error('Error fetching landmarks:', error);
+      }
+    };
+    fetchLandmarks();
+  }, []);
+  
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
@@ -37,10 +54,25 @@ const HomePage: React.FC = () => {
   }, []);
 
   const renderMap = () => {
+    if (landmarks.length > 0) {
+      const data: any[] = []; // عرّفت data هنا
+      landmarks.forEach((landmark) => {
+        data.push({
+          type: "scattermapbox",
+          lat: [landmark.lat],
+          lon: [landmark.lon],
+          text: [landmark.name],
+          mode: "markers",
+          marker: { size: 14, color: "blue" },
+        });
+      });
+      // كمل باقي رسم الخريطة هنا باستخدام data
+    }
+    
     if (!mapRef.current || !window.Plotly) return;
-
+  
     const data = [];
-
+  
     if (startPoint) {
       data.push({
         type: "scattermapbox",
@@ -51,7 +83,7 @@ const HomePage: React.FC = () => {
         marker: { size: 14, color: "red" },
       });
     }
-
+  
     if (destination) {
       data.push({
         type: "scattermapbox",
@@ -62,7 +94,7 @@ const HomePage: React.FC = () => {
         marker: { size: 14, color: "green" },
       });
     }
-
+  
     if (route) {
       data.push({
         type: "scattermapbox",
@@ -72,21 +104,23 @@ const HomePage: React.FC = () => {
         line: { width: 4, color: "blue" },
       });
     }
-
+  
+  
     window.Plotly.newPlot(
       mapRef.current,
       data,
       {
         mapbox: {
-          style: "open-street-map",
+          style: "open-street-map",  // Keep OpenStreetMap style (you can later customize)
           center: startPoint || location || undefined,
-          zoom: 12,
+          zoom: 13,
           accessToken: MAPBOX_TOKEN,
         },
         margin: { t: 0, b: 0, l: 0, r: 0 },
       }
     );
   };
+  
 
   const fetchRoute = async () => {
     if (!startPoint || !destination) {
@@ -167,7 +201,10 @@ const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lo
       "mapbox.zoom": 14,
     });
   };
-
+  const handleNavigateToLandmarks = () => {
+    // Navigate to the landmarks route
+    router.push('/landmarks');
+  };
   return (
     <div className="homepage-container">
       <div className="left-container">
@@ -184,6 +221,7 @@ const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lo
           </label>
           <button type="submit">Set Starting Point</button>
         </form>
+        
         <form onSubmit={updateDestination}>
           <label>
             Destination:
@@ -199,6 +237,11 @@ const url = `https://api.mapbox.com/directions/v5/mapbox/driving/${startPoint.lo
         <button onClick={() => focusOnPoint(startPoint)}>Go to Start</button>
         <button onClick={() => focusOnPoint(destination)}>Go to Destination</button>
         <button onClick={fetchRoute}>Show the Road</button>
+        <button onClick={handleNavigateToLandmarks} className="add-landmark-btn">
+  Add New Landmark
+</button>
+
+       
         {routeDetails && (
           <div className="route-details">
             <p>Distance: {routeDetails.distance}</p>
