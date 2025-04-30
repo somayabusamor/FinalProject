@@ -1,9 +1,18 @@
+
 import React, { useEffect, useRef, useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Animated, Easing } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTranslations, LocaleKeys } from '@/frontend/constants/locales';
+import { useTranslations } from '@/frontend/constants/locales';
+import type { LocaleKeys } from '@/frontend/constants/locales/types';
 
-const villages = [
+type Village = {
+  id: string;
+  names: Record<LocaleKeys, string>;
+  descriptions: Record<LocaleKeys, string>;
+  image: string;
+};
+
+const villages: Village[] = [
   {
     id: 'Umalhieran',
     names: {
@@ -53,13 +62,14 @@ export default function MainIndex() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [language, setLanguage] = useState<LocaleKeys>('en');
   const t = useTranslations(language);
+  
   const translatedVillages = useMemo(() => {
     return villages.map(village => ({
       ...village,
       name: village.names[language],
       description: village.descriptions[language]
     }));
-  }, [language])
+  }, [language]);
 
   useEffect(() => {
     Animated.timing(fadeAnim, {
@@ -83,7 +93,7 @@ export default function MainIndex() {
       {/* Header */}
       <View style={styles.header}>
         <Animated.Text style={[styles.welcomeText, { opacity: fadeAnim }]}>
-          {t.welcome} <Text style={styles.brandName}>{t.appName}</Text>! 🌟
+          {t.common.welcome} <Text style={styles.brandName}>{t.common.appName}</Text>! 🌟
         </Animated.Text>
 
         {/* Language Selector */}
@@ -102,8 +112,8 @@ export default function MainIndex() {
           ))}
         </View>
 
-  {/* Left Buttons */}
-  <View style={styles.leftButtonContainer}>
+        {/* Left Buttons */}
+        <View style={styles.leftButtonContainer}>
           <TouchableOpacity style={styles.button} onPress={() => router.push('/login')}>
             <Text style={styles.buttonText}>{t.auth.signIn}</Text>
           </TouchableOpacity>
@@ -152,6 +162,8 @@ export default function MainIndex() {
     </View>
   );
 }
+
+// Keep your existing styles
 
 const styles = StyleSheet.create({
   container: {

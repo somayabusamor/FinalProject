@@ -136,6 +136,45 @@ app.get('/api/test-user', async (req, res) => {
     }
 });
 
+app.post('/api/addVillage', async (req, res) => {
+    try {
+        const { name, description, imageUrl } = req.body;
+        
+        // Validate required fields
+        if (!name || !description) {
+            return res.status(400).json({ error: "Name and description are required" });
+        }
+
+        const newVillage = new Village({
+            name,
+            description,
+            images: imageUrl ? [imageUrl] : ['https://via.placeholder.com/300x200?text=No+Image'],
+            location: {
+                type: 'Point',
+                coordinates: [0, 0]
+            }
+        });
+
+        await newVillage.save();
+        res.status(201).json(newVillage);
+    } catch (error) {
+        console.error("Error:", error);
+        res.status(500).json({ 
+            error: "Failed to save village",
+            details: error.message 
+        });
+    }
+});
+
+app.get('/api/villages', async (req, res) => {
+    try {
+      const villages = await Village.find();
+      res.status(200).json(villages);
+    } catch (error) {
+      res.status(500).json({ message: 'Error fetching villages', error: error.message });
+    }
+  });
+  
 mongoose.connect(process.env.DB)
     .then(() => { console.log('MongoDB connected successfully'); })
     .catch((err) => console.error('MongoDB connection error:', err));

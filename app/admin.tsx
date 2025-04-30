@@ -1,80 +1,198 @@
-// frontend/pages/admin-dashboard.tsx
 import { useRouter } from 'expo-router';
-
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 
 export default function AdminDashboard() {
   const router = useRouter();
   
   return (
-    <div className="min-h-screen bg-gray-100">
+    <View style={styles.container}>
       {/* Header */}
-      <header className="bg-purple-700 text-white p-4 shadow-lg">
-        <div className="container mx-auto flex justify-between items-center">
-          <h1 className="text-2xl font-bold">Admin Dashboard</h1>
-          <div className="flex space-x-4">
-           
-          
-          </div>
-        </div>
-      </header>
+      <View style={styles.header}>
+        <View style={styles.headerContent}>
+          <Text style={styles.headerTitle}>Admin Dashboard</Text>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.addButton}
+              onPress={() => router.push('/addVillage')}
+            >
+              <Ionicons name="add" size={20} color="white" />
+              <Text style={styles.addButtonText}>Add Village</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
 
       {/* Main Content */}
-      <main className="container mx-auto p-4">
+      <ScrollView style={styles.content}>
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-gray-500">Total Users</h3>
-            <p className="text-3xl font-bold">1,248</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-gray-500">Active Reports</h3>
-            <p className="text-3xl font-bold">42</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-gray-500">Pending Actions</h3>
-            <p className="text-3xl font-bold">15</p>
-          </div>
-          <div className="bg-white p-4 rounded-lg shadow">
-            <h3 className="text-gray-500">System Health</h3>
-            <p className="text-3xl font-bold text-green-500">100%</p>
-          </div>
-        </div>
+        <View style={styles.statsContainer}>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Total Users</Text>
+            <Text style={styles.statValue}>521</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Active Reports</Text>
+            <Text style={styles.statValue}>42</Text>
+          </View>
+          <View style={styles.statCard}>
+            <Text style={styles.statLabel}>Pending Actions</Text>
+            <Text style={styles.statValue}>15</Text>
+          </View>
+          <View style={[styles.statCard, { borderBottomColor: '#4CAF50' }]}>
+            <Text style={styles.statLabel}>System Health</Text>
+            <Text style={[styles.statValue, { color: '#4CAF50' }]}>100%</Text>
+          </View>
+        </View>
 
         {/* Admin Tools */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <View style={styles.toolsContainer}>
           {/* User Management */}
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">User Management</h2>
-            <div className="space-y-3">
-              <button className="w-full bg-blue-500 text-white py-2 rounded hover:bg-blue-600">
-                View All Users
-              </button>
-              <button className="w-full bg-green-500 text-white py-2 rounded hover:bg-green-600">
-                Create New User
-              </button>
-              <button className="w-full bg-yellow-500 text-white py-2 rounded hover:bg-yellow-600">
-                Manage Roles
-              </button>
-            </div>
-          </div>
+          <View style={styles.toolCard}>
+            <Text style={styles.toolTitle}>User Management</Text>
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#2196F3' }]}>
+                <Text style={styles.buttonText}>View All Users</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#4CAF50' }]}>
+                <Text style={styles.buttonText}>Create New User</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#FFC107' }]}>
+                <Text style={styles.buttonText}>Manage Roles</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* System Controls */}
-          <div className="bg-white p-6 rounded-lg shadow-lg">
-            <h2 className="text-xl font-semibold mb-4">System Controls</h2>
-            <div className="space-y-3">
-              <button className="w-full bg-red-500 text-white py-2 rounded hover:bg-red-600">
-                Emergency Broadcast
-              </button>
-              <button className="w-full bg-purple-500 text-white py-2 rounded hover:bg-purple-600">
-                Database Backup
-              </button>
-              <button className="w-full bg-gray-500 text-white py-2 rounded hover:bg-gray-600">
-                System Logs
-              </button>
-            </div>
-          </div>
-        </div>
-      </main>
-    </div>
+          <View style={styles.toolCard}>
+            <Text style={styles.toolTitle}>System Controls</Text>
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#F44336' }]}>
+                <Text style={styles.buttonText}>Emergency Broadcast</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#9C27B0' }]}>
+                <Text style={styles.buttonText}>Database Backup</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#607D8B' }]}>
+                <Text style={styles.buttonText}>System Logs</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </ScrollView>
+    </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  header: {
+    backgroundColor: '#7B1FA2',
+    paddingTop: 50,
+    paddingBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  headerContent: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  headerTitle: {
+    color: 'white',
+    fontSize: 22,
+    fontWeight: 'bold',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  addButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FF9800',
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+    marginLeft: 10,
+  },
+  addButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+    marginLeft: 5,
+  },
+  content: {
+    flex: 1,
+    padding: 15,
+  },
+  statsContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    marginBottom: 20,
+  },
+  statCard: {
+    width: '48%',
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+    borderBottomWidth: 3,
+    borderBottomColor: '#2196F3',
+  },
+  statLabel: {
+    color: '#757575',
+    fontSize: 14,
+    marginBottom: 5,
+  },
+  statValue: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#212121',
+  },
+  toolsContainer: {
+    marginBottom: 20,
+  },
+  toolCard: {
+    backgroundColor: 'white',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
+  },
+  toolTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 15,
+    color: '#212121',
+  },
+  buttonGroup: {
+    marginTop: 10,
+  },
+  button: {
+    padding: 12,
+    borderRadius: 6,
+    marginBottom: 10,
+    alignItems: 'center',
+  },
+  buttonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
+});

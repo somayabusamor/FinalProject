@@ -1,0 +1,37 @@
+.add-village-container {
+    max-width: 500px;
+    margin: auto;
+    padding: 2rem;
+    background-color: #fdfdfd;
+    border-radius: 1rem;
+    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  }
+  
+  .add-village-form input,
+  .add-village-form textarea {
+    width: 100%;
+    padding: 0.75rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ccc;
+    border-radius: 0.5rem;
+  }
+  
+  .add-village-form button {
+    padding: 0.75rem 1.5rem;
+    background-color: #a97435;
+    color: white;
+    border: none;
+    border-radius: 0.5rem;
+    cursor: pointer;
+  }
+  
+  .add-village-form button:hover {
+    background-color: #8a5f2e;
+  }
+  
+  .message {
+    margin-top: 1rem;
+    color: green;
+    font-weight: bold;
+  }
+  
