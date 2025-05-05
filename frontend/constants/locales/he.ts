@@ -10,6 +10,7 @@ export default {
     },
     auth: {
       signIn: "התחברות",
+      logout: 'התנתקות', // ✅ Add this line
       signUp: "הרשמה",
       login: {
         title: "התחברות",

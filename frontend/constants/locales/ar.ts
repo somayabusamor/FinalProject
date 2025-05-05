@@ -11,6 +11,7 @@ export default {
     auth: {
       signIn: "تسجيل الدخول",
       signUp: "إنشاء حساب",
+      logout: 'خروج', // ✅ Add this line
       login: {
         title: "تسجيل الدخول",
         email: "البريد الإلكتروني",

@@ -11,6 +11,7 @@ export default {
     auth: {
       signIn: "Sign In",
       signUp: "Sign Up",
+      logout: 'Log Out', // ✅ Add this line
       login: {
         title: "Sign In",
         email: "Email",
