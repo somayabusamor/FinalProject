@@ -1,6 +1,6 @@
 import { useRouter } from 'expo-router';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function AdminDashboard() {
   const router = useRouter();
@@ -16,7 +16,7 @@ export default function AdminDashboard() {
               style={styles.addButton}
               onPress={() => router.push('/addVillage')}
             >
-              <Ionicons name="add" size={20} color="white" />
+              <MaterialIcons name="add" size={20} color="#FFD700" />
               <Text style={styles.addButtonText}>Add Village</Text>
             </TouchableOpacity>
           </View>
@@ -29,19 +29,19 @@ export default function AdminDashboard() {
         <View style={styles.statsContainer}>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Total Users</Text>
-            <Text style={styles.statValue}>521</Text>
+            <Text style={styles.statValue}>11</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Active Reports</Text>
-            <Text style={styles.statValue}>42</Text>
+            <Text style={styles.statValue}>4</Text>
           </View>
           <View style={styles.statCard}>
             <Text style={styles.statLabel}>Pending Actions</Text>
-            <Text style={styles.statValue}>15</Text>
+            <Text style={styles.statValue}>1</Text>
           </View>
-          <View style={[styles.statCard, { borderBottomColor: '#4CAF50' }]}>
+          <View style={[styles.statCard, { borderBottomColor: '#8d6e63' }]}>
             <Text style={styles.statLabel}>System Health</Text>
-            <Text style={[styles.statValue, { color: '#4CAF50' }]}>100%</Text>
+            <Text style={[styles.statValue, { color: '#8d6e63' }]}>100%</Text>
           </View>
         </View>
 
@@ -51,30 +51,14 @@ export default function AdminDashboard() {
           <View style={styles.toolCard}>
             <Text style={styles.toolTitle}>User Management</Text>
             <View style={styles.buttonGroup}>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#2196F3' }]}>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#6d4c41' }]}>
                 <Text style={styles.buttonText}>View All Users</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#4CAF50' }]}>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#8d6e63' }]}>
                 <Text style={styles.buttonText}>Create New User</Text>
               </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#FFC107' }]}>
+              <TouchableOpacity style={[styles.button, { backgroundColor: '#5d4037' }]}>
                 <Text style={styles.buttonText}>Manage Roles</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          {/* System Controls */}
-          <View style={styles.toolCard}>
-            <Text style={styles.toolTitle}>System Controls</Text>
-            <View style={styles.buttonGroup}>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#F44336' }]}>
-                <Text style={styles.buttonText}>Emergency Broadcast</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#9C27B0' }]}>
-                <Text style={styles.buttonText}>Database Backup</Text>
-              </TouchableOpacity>
-              <TouchableOpacity style={[styles.button, { backgroundColor: '#607D8B' }]}>
-                <Text style={styles.buttonText}>System Logs</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -87,10 +71,10 @@ export default function AdminDashboard() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#fff',
   },
   header: {
-    backgroundColor: '#7B1FA2',
+    backgroundColor: '#6d4c41',
     paddingTop: 50,
     paddingBottom: 20,
     shadowColor: '#000',
@@ -106,7 +90,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   headerTitle: {
-    color: 'white',
+    color: '#FFD700',
     fontSize: 22,
     fontWeight: 'bold',
   },
@@ -117,14 +101,16 @@ const styles = StyleSheet.create({
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FF9800',
+    backgroundColor: '#8d6e63',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
     marginLeft: 10,
+    borderWidth: 1,
+    borderColor: '#FFD700',
   },
   addButtonText: {
-    color: 'white',
+    color: '#FFD700',
     fontWeight: 'bold',
     marginLeft: 5,
   },
@@ -140,47 +126,51 @@ const styles = StyleSheet.create({
   },
   statCard: {
     width: '48%',
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
     borderBottomWidth: 3,
-    borderBottomColor: '#2196F3',
+    borderBottomColor: '#6d4c41',
+    borderWidth: 1,
+    borderColor: '#f0e6e2',
   },
   statLabel: {
-    color: '#757575',
+    color: '#8d6e63',
     fontSize: 14,
     marginBottom: 5,
   },
   statValue: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#212121',
+    color: '#5d4037',
   },
   toolsContainer: {
     marginBottom: 20,
   },
   toolCard: {
-    backgroundColor: 'white',
+    backgroundColor: '#fff',
     borderRadius: 10,
     padding: 15,
     marginBottom: 15,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.2,
+    shadowOpacity: 0.1,
     shadowRadius: 2,
     elevation: 2,
+    borderWidth: 1,
+    borderColor: '#f0e6e2',
   },
   toolTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     marginBottom: 15,
-    color: '#212121',
+    color: '#6d4c41',
   },
   buttonGroup: {
     marginTop: 10,
@@ -190,9 +180,14 @@ const styles = StyleSheet.create({
     borderRadius: 6,
     marginBottom: 10,
     alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 2,
+    elevation: 2,
   },
   buttonText: {
-    color: 'white',
+    color: '#FFD700',
     fontWeight: 'bold',
   },
 });

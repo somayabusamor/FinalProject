@@ -1,72 +1,105 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
-import { MaterialIcons } from '@expo/vector-icons'; // لاستخدام الأيقونات
+import { MaterialIcons } from '@expo/vector-icons';
 
 const ContactUs = () => {
+  const contacts = [
+    {
+      name: "Asraa Al Gergawi",
+      email: "asraaalgergawi@gmail.com",
+      phone: "0523694162"
+    },
+    {
+      name: "Tasneem",
+      email: "tasnesh@ac.sce.ac.il",
+      phone: "0523694162"
+    },
+    {
+      name: "Somaya",
+      email: "ssomaya252@gmail.com",
+      phone: "0523694162"
+    }
+  ];
+
   return (
     <ScrollView contentContainerStyle={styles.container}>
-      <Text style={styles.title}>Contact Us</Text>
-
-      <View style={styles.contactItem}>
-        <MaterialIcons name="email" size={24} color="#4CAF50" />
-        <Text style={styles.contactText}>asraaalgergawi@gmail.com</Text>
+      <View style={styles.header}>
+        <Text style={styles.headerText}>Contact Us</Text>
       </View>
 
-      <View style={styles.contactItem}>
-        <MaterialIcons name="phone" size={24} color="#4CAF50" />
-        <Text style={styles.contactText}>0523694162</Text>
-      </View>
-
-      <View style={styles.contactItem}>
-        <MaterialIcons name="email" size={24} color="#4CAF50" />
-        <Text style={styles.contactText}>tasnesh@ac.sce.ac.il</Text>
-      </View>
-
-      <View style={styles.contactItem}>
-        <MaterialIcons name="phone" size={24} color="#4CAF50" />
-        <Text style={styles.contactText}>0523694162</Text>
-      </View>
-
-      <View style={styles.contactItem}>
-        <MaterialIcons name="email" size={24} color="#4CAF50" />
-        <Text style={styles.contactText}>ssomaya252@gmail.com</Text>
-      </View>
-
-      <View style={styles.contactItem}>
-        <MaterialIcons name="phone" size={24} color="#4CAF50" />
-        <Text style={styles.contactText}>0523694162</Text>
-      </View>
+      {contacts.map((contact, index) => (
+        <View key={index} style={styles.contactCard}>
+          <Text style={styles.contactName}>{contact.name}</Text>
+          
+          <View style={styles.contactInfo}>
+            <MaterialIcons name="email" size={20} color="#6d4c41" />
+            <Text style={styles.contactText}>{contact.email}</Text>
+          </View>
+          
+          <View style={styles.contactInfo}>
+            <MaterialIcons name="phone" size={20} color="#6d4c41" />
+            <Text style={styles.contactText}>{contact.phone}</Text>
+          </View>
+        </View>
+      ))}
     </ScrollView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
-    flexGrow: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    padding: 20,
-    backgroundColor: '#F5F5F5',
-  },
-  title: {
-    fontSize: 28,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 20,
-  },
-  contactItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
+    paddingVertical: 20,
+    paddingHorizontal: 15,
     backgroundColor: '#fff',
+    flexGrow: 1,
+  },
+  header: {
+    backgroundColor: '#6d4c41',
+    paddingVertical: 20,
+    borderRadius: 12,
+    marginBottom: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.1,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  headerText: {
+    fontSize: 24,
+    color: 'white',
+    fontWeight: 'bold',
+  },
+  contactCard: {
+    backgroundColor: 'white',
     padding: 15,
     borderRadius: 10,
-    marginVertical: 10,
-    width: '100%',
-    elevation: 2, // للظل
+    marginBottom: 15,
+    borderWidth: 1,
+    borderColor: '#e0e0e0',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowOffset: { width: 0, height: 2 },
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  contactName: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#6d4c41',
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f5f5f5',
+    paddingBottom: 8,
+  },
+  contactInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: 8,
   },
   contactText: {
-    fontSize: 16,
-    color: '#555',
+    fontSize: 15,
+    color: '#5d4037',
     marginLeft: 10,
   },
 });

@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-nativ
 import { useRouter } from 'expo-router';
 import axios, { AxiosError } from 'axios';
 import { useTranslations, LocaleKeys } from '@/frontend/constants/locales';
+import { MaterialIcons } from '@expo/vector-icons';
 
 export default function Login() {
   const router = useRouter();
@@ -62,16 +63,19 @@ export default function Login() {
         ))}
       </View>
 
-      <View style={styles.formContainer}>
+      <View style={styles.header}>
+        <MaterialIcons name="login" size={40} color="#FFD700" />
         <Text style={styles.title}>{t.auth.login.title}</Text>
-        
+      </View>
+
+      <View style={styles.formContainer}>
         <TextInput
           style={styles.input}
           placeholder={t.auth.login.email}
           value={email}
           onChangeText={setEmail}
           keyboardType="email-address"
-          placeholderTextColor="#aaa"
+          placeholderTextColor="#8d6e63"
           textAlign={language === 'ar' || language === 'he' ? 'right' : 'left'}
         />
         <TextInput
@@ -80,7 +84,7 @@ export default function Login() {
           secureTextEntry
           value={password}
           onChangeText={setPassword}
-          placeholderTextColor="#aaa"
+          placeholderTextColor="#8d6e63"
           textAlign={language === 'ar' || language === 'he' ? 'right' : 'left'}
         />
         
@@ -104,71 +108,91 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#f0f0f0',
+    backgroundColor: '#fff',
+    padding: 20,
+  },
+  header: {
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#6d4c41',
+    marginTop: 10,
   },
   formContainer: {
     backgroundColor: '#fff',
-    padding: 40,
-    borderRadius: 8,
-    width: 350,
+    padding: 30,
+    borderRadius: 12,
+    width: '100%',
+    maxWidth: 400,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
-    shadowRadius: 20,
-    elevation: 10,
-    alignItems: 'center',
-  },
-  title: {
-    fontSize: 32,
-    fontWeight: 'bold',
-    color: '#333',
-    marginBottom: 30,
+    shadowRadius: 6,
+    elevation: 5,
+    borderWidth: 1,
+    borderColor: '#f0e6e2',
   },
   input: {
     width: '100%',
-    padding: 12,
+    padding: 15,
     borderWidth: 1,
-    borderColor: '#ddd',
+    borderColor: '#d7ccc8',
     borderRadius: 8,
-    marginBottom: 15,
+    marginBottom: 20,
     fontSize: 16,
     backgroundColor: '#fff',
+    color: '#5d4037',
   },
   button: {
-    backgroundColor: '#007bff',
-    paddingVertical: 12,
-    paddingHorizontal: 40,
-    borderRadius: 30,
+    backgroundColor: '#6d4c41',
+    paddingVertical: 15,
+    borderRadius: 8,
     alignItems: 'center',
     marginTop: 10,
     width: '100%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFD700',
     fontSize: 18,
     fontWeight: 'bold',
   },
   signupLinkContainer: {
     marginTop: 20,
     flexDirection: 'row',
+    justifyContent: 'center',
   },
   signupText: {
     fontSize: 14,
-    color: '#555',
+    color: '#8d6e63',
   },
   signupLink: {
     fontSize: 14,
     fontWeight: 'bold',
-    color: '#007bff',
+    color: '#6d4c41',
+    marginLeft: 5,
+    textDecorationLine: 'underline',
   },
   languageSelector: {
     position: 'absolute',
     top: 40,
     right: 20,
     flexDirection: 'row',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: '#f5f5f5',
     borderRadius: 20,
     padding: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.1,
+    shadowRadius: 2,
+    elevation: 2,
   },
   languageButton: {
     paddingHorizontal: 12,
@@ -177,10 +201,10 @@ const styles = StyleSheet.create({
     marginHorizontal: 3,
   },
   activeLanguage: {
-    backgroundColor: 'rgba(255,255,255,0.5)',
+    backgroundColor: '#6d4c41',
   },
   languageText: {
-    color: '#007bff',
+    color: '#6d4c41',
     fontWeight: 'bold',
   },
 });

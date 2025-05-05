@@ -6,10 +6,11 @@ const multer = require('multer');
 const path = require('path');
 const { User } = require('./models/User');
 const { Update } = require('./models/Update'); // Correct import
+const Village = require('./models/Village');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
 const landmarksRoute = require('./routes/landmarks'); // راوت اللاند ماركس
-
+const villageRoutes = require('./routes/villages.js') ;
 const updateRoute = require('./routes/Update'); // Import the update route
 const usersRoutes = require('./routes/users');
 
@@ -27,7 +28,8 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', usersRoutes);
 app.use('/api/landmarks', landmarksRoute);
-
+// Use village routes
+app.use('/api/villages', villageRoutes);
 // Define the storage configuration for Multer
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
@@ -140,7 +142,6 @@ app.post('/api/addVillage', async (req, res) => {
     try {
         const { name, description, imageUrl } = req.body;
         
-        // Validate required fields
         if (!name || !description) {
             return res.status(400).json({ error: "Name and description are required" });
         }
@@ -148,7 +149,7 @@ app.post('/api/addVillage', async (req, res) => {
         const newVillage = new Village({
             name,
             description,
-            images: imageUrl ? [imageUrl] : ['https://via.placeholder.com/300x200?text=No+Image'],
+            images: imageUrl ? [imageUrl] : [], // Store in images array
             location: {
                 type: 'Point',
                 coordinates: [0, 0]
@@ -156,7 +157,12 @@ app.post('/api/addVillage', async (req, res) => {
         });
 
         await newVillage.save();
-        res.status(201).json(newVillage);
+        res.status(201).json({
+            _id: newVillage._id,
+            name: newVillage.name,
+            description: newVillage.description,
+            image: newVillage.images[0] || null // Also return as flat image property
+        });
     } catch (error) {
         console.error("Error:", error);
         res.status(500).json({ 

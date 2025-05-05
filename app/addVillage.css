@@ -1,37 +1,90 @@
 .add-village-container {
-    max-width: 500px;
-    margin: auto;
-    padding: 2rem;
-    background-color: #fdfdfd;
-    border-radius: 1rem;
-    box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-  }
-  
-  .add-village-form input,
-  .add-village-form textarea {
-    width: 100%;
-    padding: 0.75rem;
-    margin-bottom: 1rem;
-    border: 1px solid #ccc;
-    border-radius: 0.5rem;
-  }
-  
-  .add-village-form button {
-    padding: 0.75rem 1.5rem;
-    background-color: #a97435;
-    color: white;
-    border: none;
-    border-radius: 0.5rem;
-    cursor: pointer;
-  }
-  
-  .add-village-form button:hover {
-    background-color: #8a5f2e;
-  }
-  
-  .message {
-    margin-top: 1rem;
-    color: green;
-    font-weight: bold;
-  }
-  
+  max-width: 600px;
+  margin: 3rem auto;
+  padding: 2.5rem;
+  background-color: #fff;
+  border-radius: 1rem;
+  box-shadow: 0 0 15px rgba(0, 0, 0, 0.1);
+  border: 2px solid #f0e6e2;
+  text-align: center;
+}
+
+.form-title {
+  color: #6d4c41;
+  margin-bottom: 2rem;
+  font-size: 2.2rem;
+  font-weight: 700;
+}
+
+.add-village-form {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.form-input,
+.form-textarea {
+  width: 100%;
+  padding: 1rem;
+  border: 2px solid #d7ccc8;
+  border-radius: 0.8rem;
+  background-color: #fff;
+  color: #5d4037;
+  font-size: 1.2rem;
+}
+
+.form-textarea {
+  height: 150px;
+  resize: vertical;
+}
+
+.submit-button {
+  width: 100%;
+  padding: 1.2rem;
+  background-color: #6d4c41;
+  color: #FFD700;
+  border: none;
+  border-radius: 0.8rem;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 1.3rem;
+  transition: background-color 0.3s ease;
+  margin-top: 1.5rem;
+}
+
+.submit-button:hover {
+  background-color: #5d4037;
+}
+
+.submit-button:disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+}
+
+.message {
+  margin: 1.5rem 0;
+  padding: 1rem;
+  border-radius: 0.8rem;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+.message.success {
+  background-color: rgba(76, 175, 80, 0.1);
+  color: #4CAF50;
+  border: 2px solid #4CAF50;
+}
+
+.message.error {
+  background-color: rgba(211, 47, 47, 0.1);
+  color: #d32f2f;
+  border: 2px solid #d32f2f;
+}
+
+.credit-text {
+  margin-top: 2.5rem;
+  color: #8d6e63;
+  font-size: 1.4rem;
+  font-weight: 600;
+  font-style: italic;
+}

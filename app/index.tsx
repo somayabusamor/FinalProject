@@ -1,76 +1,71 @@
-
 import React, { useEffect, useRef, useState, useMemo } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Animated, Easing } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, Animated, Easing, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useTranslations } from '@/frontend/constants/locales';
 import type { LocaleKeys } from '@/frontend/constants/locales/types';
+import axios from 'axios';
 
 type Village = {
-  id: string;
-  names: Record<LocaleKeys, string>;
-  descriptions: Record<LocaleKeys, string>;
-  image: string;
+  _id: string;
+  name: string;
+  description: string;
+  images?: string[];  // Now using images array
+  names?: Record<LocaleKeys, string>;
+  descriptions?: Record<LocaleKeys, string>;
 };
-
-const villages: Village[] = [
-  {
-    id: 'Umalhieran',
-    names: {
-      en: 'Atir - Um Alhieran',
-      ar: 'عتير - أم الحيران',
-      he: 'עתיר - אום אל-חיראן'
-    },
-    descriptions: {
-      en: 'Al-Zarnuq is one of the unrecognized villages in the Negev.',
-      ar: 'الزرقانة هي إحدى القرى غير المعترف بها في النقب.',
-      he: 'אל-זרנוק הוא אחד הכפרים הלא מוכרים בנגב'
-    },
-    image: 'https://palqura.com/images/city/181677779338.jpeg',
-  },
-  {
-    id: 'wadi-alnaam',
-    names: {
-      en: 'Wadi Al-Na\'am',
-      ar: 'وادي النعم',
-      he: 'ואדי אל-נעם'
-    },
-    descriptions: {
-      en: 'The largest unrecognized village in the Negev, suffers from a lack of services.',
-      ar: 'أكبر قرية غير معترف بها في النقب، تعاني من نقص الخدمات.',
-      he: 'הכפר הלא מוכר הגדול ביותר בנגב, סובל ממחסור בשירותים'
-    },
-    image: 'https://law.acri.org.il/ar/wp-content/uploads/2014/03/wadi-al-naam2.jpg',
-  },
-  {
-    id: 'khashem-zaneh',
-    names: {
-      en: 'Khashem Zaneh',
-      ar: 'خشم زنة',
-      he: 'חשום זנה'
-    },
-    descriptions: {
-      en: 'A small unrecognized village in the Negev, facing infrastructure challenges.',
-      ar: 'قرية صغيرة غير معترف بها في النقب، تواجه تحديات بنية تحتية.',
-      he: 'כפר קטן לא מוכר בנגב, מתמודד עם אתגרי תשתית'
-    },
-    image: 'https://www.sikkuy-aufoq.org.il/wp-content/uploads/2020/11/c57e03f7-5054-4ac8-97a8-e2b5bd10197c-e1605085894243-1024x620.jpg',
-  },
-];
 
 export default function MainIndex() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const [language, setLanguage] = useState<LocaleKeys>('en');
+  const [villages, setVillages] = useState<Village[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const t = useTranslations(language);
-  
-  const translatedVillages = useMemo(() => {
-    return villages.map(village => ({
-      ...village,
-      name: village.names[language],
-      description: village.descriptions[language]
-    }));
-  }, [language]);
+  const baseUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8082";
 
+  useEffect(() => {
+    const fetchVillages = async () => {
+      try {
+        setLoading(true);
+        const response = await axios.get(`${baseUrl}/api/villages`);
+        setVillages(response.data);
+      } catch (err) {
+        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+        setError(errorMessage);
+        console.error("Error fetching villages:", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchVillages();
+  }, [baseUrl]);
+
+  const getImageUrl = (village: Village) => {
+    return village.images && village.images.length > 0 
+      ? village.images[0] 
+      : 'https://static-cdn.toi-media.com/www/uploads/2021/06/000_9BN43E.jpg';
+  };
+
+  const translatedVillages = useMemo(() => {
+    return villages.map(village => {
+      if (village.names && village.descriptions) {
+        return {
+          ...village,
+          id: village._id,
+          name: village.names[language] || village.name,
+          description: village.descriptions[language] || village.description
+        };
+      }
+      return {
+        ...village,
+        id: village._id,
+        name: village.name,
+        description: village.description
+      };
+    });
+  }, [villages, language]);
   useEffect(() => {
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -80,13 +75,31 @@ export default function MainIndex() {
     }).start();
   }, []);
 
-  useEffect(() => {
-    console.log('Language changed to:', language);
-  }, [language]);
-
   const changeLanguage = (lang: LocaleKeys) => {
     setLanguage(lang);
   };
+
+  if (loading) {
+    return (
+      <View style={[styles.container, styles.loadingContainer]}>
+        <ActivityIndicator size="large" color="#8b5e3c" />
+      </View>
+    );
+  }
+
+  if (error) {
+    return (
+      <View style={[styles.container, styles.errorContainer]}>
+        <Text style={styles.errorText}>{error}</Text>
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={() => window.location.reload()}
+        >
+          <Text style={styles.retryButtonText}>Retry</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -129,14 +142,34 @@ export default function MainIndex() {
           <Text style={styles.title}>{t.villages.title}</Text>
         </View>
 
+        {/* Description Paragraph */}
+        <View style={styles.paragraphContainer}>
+          <Text style={[
+            styles.paragraphText,
+            { 
+              writingDirection: language === 'ar' || language === 'he' ? 'rtl' : 'ltr',
+              textAlign: language === 'ar' || language === 'he' ? 'right' : 'left'
+            }
+          ]}>
+            {language === 'en' && "Unrecognized villages in the Negev are home to about 70,000 Bedouins living in 35 villages that cover around 180,000 dunams (1.4% of Israel's land). Due to the lack of official recognition, these communities face severe shortages in basic infrastructure and services such as electricity, water, and sewage, relying instead on generators and water tanks. Government policies reflect systemic neglect, as Bedouins are not recognized as an indigenous population, which denies them rights under international law and deepens inequalities with the Jewish majority."}
+            {language === 'ar' && "القرى غير المعترف بها في النقب هي موطن لحوالي 70,000 بدوي يعيشون في 35 قرية تغطي حوالي 180,000 دونم (1.4٪ من أراضي إسرائيل). بسبب عدم الاعتراف الرسمي، تواجه هذه المجتمعات نقصًا حادًا في البنية التحتية والخدمات الأساسية مثل الكهرباء والمياه والصرف الصحي، وتعتمد بدلاً من ذلك على المولدات وخزانات المياه. تعكس السياسات الحكومية الإهمال المنهجي، حيث لا يتم الاعتراف بالبدو كسكان أصليين، مما يحرمهم من الحقوق بموجب القانون الدولي ويعمق عدم المساواة مع الأغلبية اليهودية."}
+            {language === 'he' && "הכפרים הבלתי מוכרים בנגב הם ביתם של כ-70,000 בדואים החיים ב-35 כפרים המשתרעים על פני כ-180,000 דונם (1.4% משטח ישראל). בשל חוסר ההכרה הרשמי, קהילות אלו סובלות ממחסור חמור בתשתיות ושירותים בסיסיים כמו חשמל, מים וביוב, ונאלצות להסתמך על גנרטורים ומיכלי מים. מדיניות הממשלה משקפת הזנחה מערכתית, כאשר הבדואים אינם מוכרים כאוכלוסייה ילידית, מה שמונע מהם זכויות לפי החוק הבינלאומי ומעמיק את אי השוויון עם הרוב היהודי."}
+          </Text>
+        </View>
+
+        {/* Villages List */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={styles.cardRow}>
-          {translatedVillages.map((village) => (
-            <TouchableOpacity
-              key={village.id}
-              onPress={() => router.push({ pathname: '/village/[id]', params: { id: village.id } })}
-              style={styles.card}
-            >
-              <Image source={{ uri: village.image }} style={styles.cardImage} />
+        {translatedVillages.map((village) => (
+          <TouchableOpacity
+          key={village._id}
+          onPress={() => router.push(`/village/${village._id}`)}
+          style={styles.card}
+       >
+        <Image 
+          source={{ uri: getImageUrl(village) }} 
+          style={styles.cardImage} 
+          defaultSource={{ uri: 'https://static-cdn.toi-media.com/www/uploads/2021/06/000_9BN43E.jpg' }}
+        />
               <Text style={[
                 styles.cardTitle,
                 { 
@@ -163,16 +196,14 @@ export default function MainIndex() {
   );
 }
 
-// Keep your existing styles
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f1e1',
   },
   header: {
     height: 120,
-    backgroundColor: '#2b6cb0',
+    backgroundColor: '#8b5e3c',
     justifyContent: 'center',
     alignItems: 'center',
     paddingTop: 40,
@@ -188,12 +219,12 @@ const styles = StyleSheet.create({
   welcomeText: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#f5f1e1',
     textAlign: 'center',
     marginBottom: 10,
   },
   brandName: {
-    color: '#FFD700',
+    color: '#d2b48c',
     fontSize: 22,
     fontWeight: 'bold',
   },
@@ -205,7 +236,7 @@ const styles = StyleSheet.create({
     bottom: 10,
   },
   button: {
-    backgroundColor: '#fff',
+    backgroundColor: '#d2b48c',
     paddingVertical: 8,
     paddingHorizontal: 18,
     borderRadius: 20,
@@ -217,7 +248,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   buttonText: {
-    color: '#2b6cb0',
+    color: '#4b2e2e',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -228,7 +259,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   titleContainer: {
-    backgroundColor: '#2b6cb0',
+    backgroundColor: '#a47149',
     width: '100%',
     padding: 20,
     borderRadius: 20,
@@ -244,15 +275,32 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#fff8e1',
     textAlign: 'center',
+  },
+  paragraphContainer: {
+    backgroundColor: '#fdf8ec',
+    width: '100%',
+    padding: 20,
+    borderRadius: 10,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 2,
+  },
+  paragraphText: {
+    fontSize: 16,
+    lineHeight: 24,
+    color: '#5b3a29',
   },
   cardRow: {
     flexDirection: 'row',
     paddingHorizontal: 20,
   },
   card: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#fdf8ec',
     borderRadius: 10,
     padding: 10,
     marginRight: 15,
@@ -275,10 +323,11 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     marginBottom: 4,
     textAlign: 'center',
+    color: '#5b3a29',
   },
   cardDescription: {
     fontSize: 14,
-    color: '#666',
+    color: '#7b5e43',
     textAlign: 'center',
   },
   languageSelector: {
@@ -292,7 +341,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   languageLabel: {
-    color: '#fff',
+    color: '#f5f1e1',
     marginRight: 8,
     fontWeight: 'bold',
   },
@@ -300,13 +349,39 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 6,
     borderRadius: 15,
-    marginHorizontal: 3,
+    marginHorizontal: 5,
+    backgroundColor: '#d2b48c',
   },
   activeLanguage: {
-    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: '#a47149',
   },
   languageText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+  loadingContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  errorContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  errorText: {
+    color: '#d9534f',
+    fontSize: 18,
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  retryButton: {
+    backgroundColor: '#8b5e3c',
+    padding: 15,
+    borderRadius: 10,
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
     fontWeight: 'bold',
   },
 });
