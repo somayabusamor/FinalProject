@@ -13,6 +13,14 @@ export default function AdminDashboard() {
           <Text style={styles.headerTitle}>Admin Dashboard</Text>
           <View style={styles.headerActions}>
             <TouchableOpacity 
+              style={styles.logoutButton}
+              onPress={() => router.push('http://localhost:8081/')}
+            >
+              <MaterialIcons name="logout" size={24} color="#FFD700" />
+              <Text style={styles.logoutButton}>Logout</Text>
+            </TouchableOpacity>
+
+            <TouchableOpacity 
               style={styles.addButton}
               onPress={() => router.push('/addVillage')}
             >
@@ -98,6 +106,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  logoutButton: {
+    paddingVertical: 8,
+    paddingHorizontal: 12,
+    borderRadius: 20,
+ 
+    color: '#FFD700',
+    marginRight: 10,
+    padding: 8,
+  },
   addButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -105,7 +122,6 @@ const styles = StyleSheet.create({
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
-    marginLeft: 10,
     borderWidth: 1,
     borderColor: '#FFD700',
   },

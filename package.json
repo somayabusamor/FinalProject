@@ -27,7 +27,7 @@
     "bcrypt": "^5.1.1",
     "bcryptjs": "^2.4.3",
     "cors": "^2.8.5",
-    "dotenv": "^16.4.7",
+    "dotenv": "^16.5.0",
     "emailjs-com": "^3.2.0",
     "expo": "~52.0.18",
     "expo-blur": "~14.0.1",
