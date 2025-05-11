@@ -13,6 +13,7 @@ const landmarksRoute = require('./routes/landmarks'); // راوت اللاند �
 const villageRoutes = require('./routes/villages.js') ;
 const updateRoute = require('./routes/Update'); // Import the update route
 const usersRoutes = require('./routes/users');
+const router = express.Router();  // Add this line
 
 const app = express();
 
@@ -28,9 +29,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', usersRoutes);
 app.use('/api/landmarks', landmarksRoute);
-// Use village routes
+// Correct (add village routes)
 app.use('/api/villages', villageRoutes);
-// Define the storage configuration for Multer
+// Use village routes
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, 'uploads'));
@@ -42,7 +43,23 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage }); // Ensure this is defined only once
-
+// GET /api/users - Fetch all users
+// Simple GET /api/users endpoint
+// In your backend index.js
+app.get('/api/users', async (req, res) => {
+    try {
+      const users = await User.find().select('-password').sort({ createdAt: -1 });
+      res.status(200).json({
+        success: true,
+        data: users
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch users'
+      });
+    }
+  });
 // Remove the duplicate POST /api/signup route
 app.post("/api/signup", async (req, res) => {
     try {
@@ -137,22 +154,48 @@ app.get('/api/test-user', async (req, res) => {
         res.status(500).send('Error adding test user.');
     }
 });
+// GET single village
+router.get('/:id', async (req, res) => {
+  try {
+    const village = await Village.findById(req.params.id);
+    if (!village) {
+      return res.status(404).json({ error: 'Village not found' });
+    }
+    res.json(village);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// GET all villages (already in your index.js, but better here)
+router.get('/', async (req, res) => {
+  try {
+    const villages = await Village.find();
+    res.json(villages);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
 app.post('/api/addVillage', async (req, res) => {
     try {
-        const { name, description, imageUrl } = req.body;
+        const { name, description, images } = req.body; // Changed from imageUrl to images
         
         if (!name || !description) {
             return res.status(400).json({ error: "Name and description are required" });
         }
 
+        if (!images || images.length === 0) {
+            return res.status(400).json({ error: "At least one image is required" });
+        }
+
         const newVillage = new Village({
             name,
             description,
-            images: imageUrl ? [imageUrl] : [], // Store in images array
+            images, // Now accepts array directly
             location: {
                 type: 'Point',
-                coordinates: [0, 0]
+                coordinates: [0, 0] // Default coordinates
             }
         });
 
@@ -161,7 +204,7 @@ app.post('/api/addVillage', async (req, res) => {
             _id: newVillage._id,
             name: newVillage.name,
             description: newVillage.description,
-            image: newVillage.images[0] || null // Also return as flat image property
+            images: newVillage.images // Return full images array
         });
     } catch (error) {
         console.error("Error:", error);
@@ -171,13 +214,58 @@ app.post('/api/addVillage', async (req, res) => {
         });
     }
 });
-
-app.get('/api/villages', async (req, res) => {
+    app.get('/api/villages', async (req, res) => {
+        try {
+        const villages = await Village.find();
+        res.status(200).json(villages);
+        } catch (error) {
+        res.status(500).json({ message: 'Error fetching villages', error: error.message });
+        }
+    });
+    // نقاط API
+app.get('/api/landmarks', async (req, res) => {
     try {
-      const villages = await Village.find();
-      res.status(200).json(villages);
-    } catch (error) {
-      res.status(500).json({ message: 'Error fetching villages', error: error.message });
+      const landmarks = await Landmark.find();
+      res.json(landmarks);
+    } catch (err) {
+      res.status(500).json({ message: err.message });
+    }
+  });
+  
+  app.post('/api/landmarks', async (req, res) => {
+    const landmark = new Landmark({
+      ...req.body,
+      verified: false,
+      votes: []
+    });
+  
+    try {
+      const newLandmark = await landmark.save();
+      res.status(201).json(newLandmark);
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+  
+  app.put('/api/landmarks/:id', async (req, res) => {
+    try {
+      const updatedLandmark = await Landmark.findByIdAndUpdate(
+        req.params.id,
+        req.body,
+        { new: true }
+      );
+      res.json(updatedLandmark);
+    } catch (err) {
+      res.status(400).json({ message: err.message });
+    }
+  });
+  
+  app.delete('/api/landmarks/:id', async (req, res) => {
+    try {
+      await Landmark.findByIdAndDelete(req.params.id);
+      res.json({ message: 'Landmark deleted' });
+    } catch (err) {
+      res.status(500).json({ message: err.message });
     }
   });
   
