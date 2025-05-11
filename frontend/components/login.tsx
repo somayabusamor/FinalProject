@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import axios, { AxiosError } from 'axios';
 import { useTranslations, LocaleKeys } from '@/frontend/constants/locales';
 import { MaterialIcons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage'; // already installed in your project
 
 export default function Login() {
   const router = useRouter();
@@ -13,32 +14,34 @@ export default function Login() {
   const t = useTranslations(language);
 
   const handleLogin = async () => {
-    try {
-      const response = await axios.post('http://localhost:8082/api/login', {
-        email,
-        password
-      });
-  
-      const role = response.data.user.role;
-  
-      if (role === "local") {
-        router.push('/local');
-      } else if (role === "emergency") {
-        router.push('/(tabs)/homepage');
-      } else if (role === "admin") {
-        router.push('/admin');
-      }
-  
-    } catch (error) {
-      const err = error as AxiosError;
-      if (err.response) {
-        console.log("Login error response:", err.response.data);
-      } else {
-        console.log("Login error:", err.message);
-      }
-    }
-  };
+  try {
+    const response = await axios.post('http://localhost:8082/api/login', {
+      email,
+      password
+    });
 
+    const role = response.data.user.role;
+
+    // Store role in AsyncStorage
+    await AsyncStorage.setItem('userRole', role);
+
+    if (role === "local") {
+      router.push('/local');
+    } else if (role === "emergency") {
+      router.push('/(tabs)/homepage');
+    } else if (role === "admin") {
+      router.push('/admin');
+    }
+
+  } catch (error) {
+    const err = error as AxiosError;
+    if (err.response) {
+      console.log("Login error response:", err.response.data);
+    } else {
+      console.log("Login error:", err.message);
+    }
+  }
+};
   const changeLanguage = (lang: LocaleKeys) => {
     setLanguage(lang);
   };

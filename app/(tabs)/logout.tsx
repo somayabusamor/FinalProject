@@ -5,10 +5,21 @@ import { useTranslations } from '@/frontend/constants/locales';
 import type { LocaleKeys } from '@/frontend/constants/locales/types';
 import { MaterialIcons } from '@expo/vector-icons';
 
+// Define a type to match the expected structure of translations
+interface LogoutTranslation {
+  auth: {
+    logout: {
+      title: string;
+      message: string;
+      button: string;
+    };
+  };
+}
+
 export default function Logout() {
   const router = useRouter();
   const [language, setLanguage] = React.useState<LocaleKeys>('en');
-  const t = useTranslations(language);
+  const t = useTranslations(language) as LogoutTranslation; // type assertion
 
   const handleLogout = () => {
     // Clear tokens, local storage, etc. if used
@@ -41,14 +52,14 @@ export default function Logout() {
 
       <View style={styles.header}>
         <MaterialIcons name="logout" size={40} color="#FFD700" />
-        <Text style={styles.title}>{t.auth.logout.title || 'Logged Out'}</Text>
+        <Text style={styles.title}>{t.auth.logout.title}</Text>
       </View>
 
       <View style={styles.messageContainer}>
-        <Text style={styles.messageText}>{t.auth.logout.message || 'You have been successfully logged out.'}</Text>
+        <Text style={styles.messageText}>{t.auth.logout.message}</Text>
 
         <TouchableOpacity style={styles.button} onPress={handleLogout}>
-          <Text style={styles.buttonText}>{t.auth.logout.button || 'Login Again'}</Text>
+          <Text style={styles.buttonText}>{t.auth.logout.button}</Text>
         </TouchableOpacity>
       </View>
     </View>
