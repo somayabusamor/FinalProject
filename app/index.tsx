@@ -44,9 +44,9 @@ export default function MainIndex() {
   }, [baseUrl]);
 
 const getImageUrl = (village: Village) => {
-  // If no images or empty array, return default
+  // If no images or empty array, return empty string (no image)
   if (!village.images || village.images.length === 0) {
-    return 'https://static-cdn.toi-media.com/www/uploads/2021/06/000_9BN43E.jpg';
+    return '';
   }
 
   // Get first image URL
@@ -62,7 +62,6 @@ const getImageUrl = (village: Village) => {
 
   return imageUrl;
 };
-
   const translatedVillages = useMemo(() => {
     return villages.map(village => {
       if (village.names && village.descriptions) {
@@ -185,16 +184,14 @@ return (
             style={styles.villageCard}
           >
             <View style={styles.villageImageContainer}>
-              <Image 
-                source={{ 
-                  uri: getImageUrl(village),
-                  cache: 'force-cache'
-                }} 
-                style={styles.villageImage}
-                resizeMode="cover"
-                onError={(e) => console.log('Image load error:', e.nativeEvent.error)}
-                onLoad={() => console.log('Image loaded successfully')}
-              />
+              {village.images && village.images.length > 0 && (
+                <Image 
+                  source={{ uri: getImageUrl(village) }}
+                  style={styles.villageImage}
+                  resizeMode="cover"
+                  onError={(e) => console.log('Failed to load image:', e.nativeEvent.error)}
+                />
+              )}
             </View>
             
             <View style={styles.villageContent}>
