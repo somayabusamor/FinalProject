@@ -23,7 +23,7 @@ export default function Logout() {
 
   const handleLogout = () => {
     // Clear tokens, local storage, etc. if used
-    router.replace('/login');
+    router.replace("http://localhost:8081");
   };
 
   const changeLanguage = (lang: LocaleKeys) => {
