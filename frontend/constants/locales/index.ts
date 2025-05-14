@@ -1,7 +1,9 @@
 import en from './en';
 import ar from './ar';
 import he from './he';
-import { LocaleKeys } from './types';
+export type LocaleKeys = 'en' | 'ar' | 'he';
+
+//import { LocaleKeys } from './types';
 
 // استخدم هذا الكائن للترجمات
 export const translations = {

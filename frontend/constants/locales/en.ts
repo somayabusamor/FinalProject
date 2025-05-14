@@ -1,4 +1,6 @@
 export default {
+  // locales/en.ts
+
     common: {
       welcome: "🌟 Welcome to",
       appName: "Negev Pulse App",
@@ -8,11 +10,15 @@ export default {
     villages: {
       title: "Unrecognized Villages in the Negev"
     },
+    
     auth: {
       signIn: "Sign In",
       signUp: "Sign Up",
-      logout: 'Log Out', // ✅ Add this line
-      login: {
+      logout: {
+        title: 'Logged Out',
+        message: 'You have been successfully logged out.',
+        button: 'Login Again',
+      },      login: {
         title: "Sign In",
         email: "Email",
         password: "Password",

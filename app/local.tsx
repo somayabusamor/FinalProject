@@ -1,8 +1,25 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { IconSymbol } from '@/frontend/components/ui/IconSymbol';
+import React, { useEffect, useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function LocalPage() {
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      const storedRole = await AsyncStorage.getItem('userRole');
+      setRole(storedRole);
+    };
+    fetchRole();
+  }, []);
+
+  if (role === 'emergency') {
+    return <Text>You do not have access to this screen.</Text>;
+  }
+
   return (
     <View style={{ flex: 1 }}>
       {/* Tab Navigation */}
@@ -22,15 +39,6 @@ export default function LocalPage() {
         }}
       >
         <Tabs.Screen
-          name="homepage"
-          options={{
-            title: 'Home',
-            tabBarIcon: ({ color }) => (
-              <MaterialIcons name="home" size={24} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="ContactUs"
           options={{
             title: 'Contact',
@@ -48,15 +56,7 @@ export default function LocalPage() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="SubmitUpdate"
-          options={{
-            title: 'Update',
-            tabBarIcon: ({ color }) => (
-              <MaterialIcons name="update" size={24} color={color} />
-            ),
-          }}
-        />
+       
         <Tabs.Screen
           name="map"
           options={{
@@ -66,15 +66,15 @@ export default function LocalPage() {
             ),
           }}
         />
-        <Tabs.Screen
-          name="location"
-          options={{
-            title: 'Location',
-            tabBarIcon: ({ color }) => (
-              <MaterialIcons name="location-on" size={24} color={color} />
-            ),
-          }}
-        />
+       {role !== 'emergency' && (
+  <Tabs.Screen
+    name="location"
+    options={{
+      title: 'Location',
+      tabBarIcon: ({ color }) => <IconSymbol size={28} name="location.fill" color={color} />,
+    }}
+  />
+)}
       </Tabs>
 
       {/* Scrollable Content */}
