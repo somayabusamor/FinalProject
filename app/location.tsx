@@ -43,6 +43,7 @@ const HomePage: React.FC = () => {
     renderMap();
   }, [landmarks]);
 
+
   // Get user location on mount
   useEffect(() => {
     if ("geolocation" in navigator) {

@@ -4,6 +4,7 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { IconSymbol } from '@/frontend/components/ui/IconSymbol';
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { router } from 'expo-router';
 
 export default function LocalPage() {
   const [role, setRole] = useState<string | null>(null);
@@ -117,10 +118,18 @@ export default function LocalPage() {
               <MaterialIcons name="report" size={20} color="#6d4c41" />
               <Text style={styles.goldButtonText}>Report Issue</Text>
             </TouchableOpacity>
-            <TouchableOpacity style={styles.brownButton}>
-              <MaterialIcons name="contact-phone" size={20} color="#FFD700" />
-              <Text style={styles.brownButtonText}>Contact Authorities</Text>
-            </TouchableOpacity>
+            <TouchableOpacity 
+  style={styles.brownButton}
+  onPress={() => {
+    // Navigate to the update map screen
+    // Replace 'UpdateMap' with the actual screen name in your navigation
+    router.push('/location');
+  }}
+>
+  <MaterialIcons name="map" size={20} color="#FFD700" />
+  <Text style={styles.brownButtonText}>Update Map</Text>
+</TouchableOpacity>
+
           </View>
 
           {/* Card 3 - Updates */}

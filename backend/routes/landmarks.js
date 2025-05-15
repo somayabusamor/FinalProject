@@ -20,6 +20,15 @@ router.post('/', async (req, res) => {
   }
 });
 
+router.get('/all', async (req, res) => {
+  try {
+    const landmarks = await Landmark.find();
+    res.json(landmarks);
+  } catch (err) {
+    res.status(500).json({ message: 'Server Error' });
+  }
+});
+
 // GET /api/landmarks
 router.get('/', async (req, res) => {
   try {

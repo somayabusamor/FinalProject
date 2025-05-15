@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import EmergencyPage from "../EmergencyPage";
-import WorkerPage from "../local";
+import WorkerPage from "./local";
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HomePage: React.FC = () => {
