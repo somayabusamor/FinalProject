@@ -26,9 +26,9 @@ export default function Login() {
     await AsyncStorage.setItem('userRole', role);
 
     if (role === "local") {
-      router.push('/local');
+      router.push('/tabs/local');
     } else if (role === "emergency") {
-      router.push('/(tabs)/homepage');
+      router.push('/tabs/homepage');
     } else if (role === "admin") {
       router.push('/admin');
     }

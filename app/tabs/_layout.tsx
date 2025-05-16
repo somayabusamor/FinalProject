@@ -15,17 +15,17 @@ export default function TabLayout() {
   useEffect(() => {
     const fetchRole = async () => {
       try {
-        const storedRole = await AsyncStorage.getItem('userRole'); // اسم المفتاح يجب أن يكون متوافقًا مع ما خزّنته
+        const storedRole = await AsyncStorage.getItem('userRole');
         setRole(storedRole);
       } catch (error) {
-        console.error('خطأ في جلب الدور من AsyncStorage:', error);
+        console.error('Error fetching role from AsyncStorage:', error);
       }
     };
     fetchRole();
   }, []);
 
   if (!role) {
-    return null; // يمكن وضع مؤشر تحميل هنا إذا أردت
+    return null; // You could show a loading indicator here instead
   }
 
   return (
@@ -53,17 +53,15 @@ export default function TabLayout() {
         },
       }}
     >
-        <Tabs.Screen
-          name="homepage"
-          options={{
-            title: 'HomePage',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
-          }}
-        />
-      
+      <Tabs.Screen
+        name="homepage"
+        options={{
+          title: 'HomePage',
+          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+        }}
+      />
 
-      
-      {/* تظهر للجميع */}
+      {/* Show for everyone */}
       <Tabs.Screen
         name="ContactUs"
         options={{
@@ -71,6 +69,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="envelope.fill" color={color} />,
         }}
       />
+      
       <Tabs.Screen
         name="AboutUs"
         options={{
@@ -78,15 +77,28 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="info.circle.fill" color={color} />,
         }}
       />
-{role !== 'emergency' && (
-  <Tabs.Screen
-    name="location"
-    options={{
-      title: 'Location',
-      tabBarIcon: ({ color }) => <IconSymbol size={28} name="location.fill" color={color} />,
-    }}
-  />
-)}
+
+      {/* Only show location tab for non-emergency roles */}
+      {role !== 'emergency' && (
+        <Tabs.Screen
+          name="location"
+          options={{
+            title: 'Location',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="location.fill" color={color} />,
+          }}
+        />
+      )}
+
+      {/* If you had a local tab, you would conditionally render it like this: */}
+      {/* {role !== 'emergency' && (
+        <Tabs.Screen
+          name="local"
+          options={{
+            title: 'Local',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
+          }}
+        />
+      )} */}
     </Tabs>
   );
 }
