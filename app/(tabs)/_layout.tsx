@@ -1,14 +1,18 @@
 import { Tabs } from 'expo-router';
-import React from 'react';
+import React, { useEffect } from 'react';
 import { Platform } from 'react-native';
 import { IconSymbol } from '@/frontend/components/ui/IconSymbol';
 import TabBarBackground from '@/frontend/components/ui/TabBarBackground';
 import { HapticTab } from '@/frontend/components/HapticTab';
 import { useColorScheme } from '@/frontend/hooks/useColorScheme';
 import { Colors } from '@/frontend/constants/Colors';
+import { I18nManager } from 'react-native';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  useEffect(() => {
+    I18nManager.forceRTL(I18nManager.isRTL);
+  }, []);
 
   return (
     <Tabs

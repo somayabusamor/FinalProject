@@ -3,6 +3,8 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useLanguage } from '@/frontend/context/LanguageProvider';
+import { useTranslations } from '@/frontend/constants/locales';
 
 type SignupData = {
   name: string;
@@ -14,6 +16,9 @@ type SignupData = {
 
 const Signup = () => {
   const router = useRouter();
+  const { language } = useLanguage();
+  const t = useTranslations();
+
   const [data, setData] = useState<SignupData>({
     name: "",
     email: "",
@@ -23,32 +28,28 @@ const Signup = () => {
   });
   const [error, setError] = useState<string>("");
 
-  const handleChange = (name: keyof SignupData, value: string) => {
-    setData((prevData) => ({ ...prevData, [name]: value }));
+  const handleChange = (field: keyof SignupData, value: string) => {
+    setData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
     if (data.password !== data.confirmPassword) {
-      setError("Passwords do not match");
+      setError(t.auth.signup.passwordMismatch);
       return;
     }
 
     try {
       const url = `http://localhost:8082/api/signup`;
-      const { data: res } = await axios.post(url, data);
-      
+      const response = await axios.post(url, data);
       Alert.alert(
-        'Success',
-        'Account created successfully!',
+        t.auth.signup.title,
+        response.data.message || t.auth.signup.successMessage,
         [{ text: 'OK', onPress: () => router.push('/login') }]
       );
-    } catch (error: any) {
-      console.error('API call failed:', error);
-      if (error.response) {
-        setError(error.response.data.message);
-      } else {
-        setError('An unexpected error occurred');
-      }
+    } catch (err: any) {
+      console.error('API call failed:', err);
+      if (err.response) setError(err.response.data.message);
+      else setError(t.auth.signup.unexpectedError);
     }
   };
 
@@ -61,62 +62,59 @@ const Signup = () => {
         <View style={styles.container}>
           <View style={styles.header}>
             <MaterialIcons name="person-add" size={40} color="#FFD700" />
-            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.title}>{t.auth.signup.title}</Text>
           </View>
 
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Name"
+              placeholder={t.auth.signup.name}
               value={data.name}
               onChangeText={(text) => handleChange('name', text)}
               placeholderTextColor="#8d6e63"
             />
-            
             <TextInput
               style={styles.input}
-              placeholder="Email"
+              placeholder={t.auth.signup.email}
               value={data.email}
               onChangeText={(text) => handleChange('email', text)}
               keyboardType="email-address"
               placeholderTextColor="#8d6e63"
             />
-            
             <TextInput
               style={styles.input}
-              placeholder="Password"
+              placeholder={t.auth.signup.password}
               value={data.password}
               onChangeText={(text) => handleChange('password', text)}
               secureTextEntry
               placeholderTextColor="#8d6e63"
             />
-            
             <TextInput
               style={styles.input}
-              placeholder="Confirm Password"
+              placeholder={t.auth.signup.confirmPassword}
               value={data.confirmPassword}
               onChangeText={(text) => handleChange('confirmPassword', text)}
               secureTextEntry
               placeholderTextColor="#8d6e63"
             />
-            
+
             <View style={styles.roleContainer}>
-              <Text style={styles.roleLabel}>Account Type:</Text>
+              <Text style={styles.roleLabel}>{t.auth.signup.roleLabel}</Text>
               <View style={styles.roleButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.roleButton, data.role === 'local' && styles.activeRole]}
                   onPress={() => handleChange('role', 'local')}
                 >
                   <Text style={[styles.roleText, data.role === 'local' && styles.activeRoleText]}>
-                    Local Resident
+                    {t.auth.signup.roleLocal}
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.roleButton, data.role === 'emergency' && styles.activeRole]}
                   onPress={() => handleChange('role', 'emergency')}
                 >
                   <Text style={[styles.roleText, data.role === 'emergency' && styles.activeRoleText]}>
-                    Emergency Responder
+                    {t.auth.signup.roleEmergency}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -125,13 +123,13 @@ const Signup = () => {
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
             <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-              <Text style={styles.buttonText}>Sign Up</Text>
+              <Text style={styles.buttonText}>{t.auth.signup.button}</Text>
             </TouchableOpacity>
 
             <View style={styles.loginLinkContainer}>
-              <Text style={styles.loginText}>Already have an account?</Text>
+              <Text style={styles.loginText}>{t.auth.signup.loginPrompt}</Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.loginLink}>Log In</Text>
+                <Text style={styles.loginLink}>{t.auth.signup.loginLink}</Text>
               </TouchableOpacity>
             </View>
           </View>

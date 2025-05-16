@@ -1,18 +1,25 @@
-import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity, ScrollView, StyleSheet } from
+'react-native';
 import { Tabs } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useLanguage } from '@/frontend/context/LanguageProvider';
+import { useTranslations } from '@/frontend/constants/locales';
+import { I18nManager } from 'react-native';
+
 
 export default function LocalPage() {
+  const { language } = useLanguage();
+  const  t  = useTranslations();
   return (
-    <View style={{ flex: 1 }}>
+<View style={{ flex: 1, direction: I18nManager.isRTL ? 'rtl' : 'ltr' }}>
       {/* Tab Navigation */}
       <Tabs
         screenOptions={{
           headerShown: false,
-          tabBarActiveTintColor: '#FFD700', // Gold for active tab
-          tabBarInactiveTintColor: '#8d6e63', // Light brown for inactive
+          tabBarActiveTintColor: '#FFD700',
+          tabBarInactiveTintColor: '#8d6e63',
           tabBarStyle: {
-            backgroundColor: '#6d4c41', // Dark brown background
+            backgroundColor: '#6d4c41',
             borderTopWidth: 0,
           },
           tabBarLabelStyle: {
@@ -24,7 +31,7 @@ export default function LocalPage() {
         <Tabs.Screen
           name="homepage"
           options={{
-            title: 'Home',
+            title: t.tabs.home,
             tabBarIcon: ({ color }) => (
               <MaterialIcons name="home" size={24} color={color} />
             ),
@@ -33,7 +40,7 @@ export default function LocalPage() {
         <Tabs.Screen
           name="ContactUs"
           options={{
-            title: 'Contact',
+            title: t.tabs.contact,
             tabBarIcon: ({ color }) => (
               <MaterialIcons name="contact-mail" size={24} color={color} />
             ),
@@ -42,7 +49,7 @@ export default function LocalPage() {
         <Tabs.Screen
           name="AboutUs"
           options={{
-            title: 'About',
+            title: t.tabs.about,
             tabBarIcon: ({ color }) => (
               <MaterialIcons name="info" size={24} color={color} />
             ),
@@ -51,7 +58,7 @@ export default function LocalPage() {
         <Tabs.Screen
           name="SubmitUpdate"
           options={{
-            title: 'Update',
+            title: t.tabs.update,
             tabBarIcon: ({ color }) => (
               <MaterialIcons name="update" size={24} color={color} />
             ),
@@ -60,7 +67,7 @@ export default function LocalPage() {
         <Tabs.Screen
           name="map"
           options={{
-            title: 'Map',
+            title: t.tabs.map,
             tabBarIcon: ({ color }) => (
               <MaterialIcons name="map" size={24} color={color} />
             ),
@@ -69,74 +76,72 @@ export default function LocalPage() {
         <Tabs.Screen
           name="location"
           options={{
-            title: 'Location',
+            title: t.tabs.location,
             tabBarIcon: ({ color }) => (
               <MaterialIcons name="location-on" size={24} color={color} />
             ),
           }}
         />
       </Tabs>
-
+  
       {/* Scrollable Content */}
       <ScrollView style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
           <MaterialIcons name="people" size={32} color="#FFD700" />
-          <Text style={styles.headerText}>Local Resident Dashboard</Text>
+          <Text style={styles.headerText}>{t.localPage.title}</Text>
         </View>
-
+  
         {/* Main Content */}
         <View style={styles.content}>
           {/* Card 1 - Alerts */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="notifications" size={24} color="#6d4c41" />
-              <Text style={styles.cardTitle}>Community Alerts</Text>
+              <Text style={styles.cardTitle}>{t.localPage.communityAlerts}</Text>
             </View>
             <View style={styles.alertItem}>
               <MaterialIcons name="warning" size={16} color="#d32f2f" />
-              <Text style={styles.alertText}>New road construction</Text>
+              <Text style={styles.alertText}>{t.localPage.alerts.roadConstruction}</Text>
             </View>
             <View style={styles.alertItem}>
               <MaterialIcons name="event" size={16} color="#6d4c41" />
-              <Text style={styles.alertText}>Upcoming town meeting</Text>
+              <Text style={styles.alertText}>{t.localPage.alerts.townMeeting}</Text>
             </View>
             <View style={styles.alertItem}>
               <MaterialIcons name="water" size={16} color="#2196F3" />
-              <Text style={styles.alertText}>Water maintenance notice</Text>
+              <Text style={styles.alertText}>{t.localPage.alerts.waterMaintenance}</Text>
             </View>
           </View>
-
+  
           {/* Card 2 - Quick Actions */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="bolt" size={24} color="#6d4c41" />
-              <Text style={styles.cardTitle}>Quick Actions</Text>
+              <Text style={styles.cardTitle}>{t.localPage.quick_actions}</Text>
             </View>
             <TouchableOpacity style={styles.goldButton}>
               <MaterialIcons name="report" size={20} color="#6d4c41" />
-              <Text style={styles.goldButtonText}>Report Issue</Text>
+              <Text style={styles.goldButtonText}>{t.localPage.report_issue}</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.brownButton}>
               <MaterialIcons name="contact-phone" size={20} color="#FFD700" />
-              <Text style={styles.brownButtonText}>Contact Authorities</Text>
+              <Text style={styles.brownButtonText}>{t.localPage.contact_authorities}</Text>
             </TouchableOpacity>
           </View>
-
+  
           {/* Card 3 - Updates */}
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="new-releases" size={24} color="#6d4c41" />
-              <Text style={styles.cardTitle}>Recent Updates</Text>
+              <Text style={styles.cardTitle}>{t.localPage.updates}</Text>
             </View>
-            <Text style={styles.updateText}>
-              Latest community news and updates will appear here. Check back regularly for important information.
-            </Text>
+            <Text style={styles.updateText}>{t.localPage.updatesText}</Text>
           </View>
         </View>
       </ScrollView>
     </View>
-  );
+  );  
 }
 
 const styles = StyleSheet.create({

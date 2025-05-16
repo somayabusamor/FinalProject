@@ -1,82 +1,87 @@
 import React from 'react';
 import { View, Text, StyleSheet, ScrollView, Linking } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-
+import { useLanguage } from '@/frontend/context/LanguageProvider';
+import { useTranslations } from '@/frontend/constants/locales';
+import { I18nManager } from 'react-native'
 const AboutUs = () => {
+  const t = useTranslations();
+  
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {/* Header Section */}
       <View style={styles.header}>
-        <Text style={styles.mainTitle}>About Us</Text>
-        <Text style={styles.subtitle}>
-          Improving emergency access with accurate geographic data
-        </Text>
+        <Text style={styles.mainTitle}>{t.about.title}</Text>
+        <Text style={styles.subtitle}>{t.about.subtitle}</Text>
       </View>
 
       {/* Project Overview */}
       <View style={styles.section}>
-        <Text style={styles.heading}>Our Mission</Text>
-        <Text style={styles.paragraph}>
-          Emergency services in Israel face difficulties reaching unrecognized areas, leading to delays and potentially harmful consequences. Our platform aims to change this by providing a reliable way to collect and share accurate geographic data for these areas, helping emergency personnel reach their destinations quickly and efficiently.
-        </Text>
+        <Text style={styles.heading}>{t.about.missionTitle}</Text>
+        <Text style={styles.paragraph}>{t.about.missionText}</Text>
       </View>
 
       {/* Problem Definition */}
       <View style={styles.section}>
-        <Text style={styles.heading}>The Problem</Text>
+        <Text style={styles.heading}>{t.about.problemTitle}</Text>
         <View style={styles.listItem}>
           <MaterialIcons name="fiber-manual-record" size={14} color="#6d4c41" />
-          <Text style={styles.listText}>Lack of accurate geographic data</Text>
+          <Text style={styles.listText}>{t.about.problemList.lackData}</Text>
         </View>
         <View style={styles.listItem}>
           <MaterialIcons name="fiber-manual-record" size={14} color="#6d4c41" />
-          <Text style={styles.listText}>Delayed response times</Text>
+          <Text style={styles.listText}>{t.about.problemList.delays}</Text>
         </View>
         <View style={styles.listItem}>
           <MaterialIcons name="fiber-manual-record" size={14} color="#6d4c41" />
-          <Text style={styles.listText}>Limited information</Text>
+          <Text style={styles.listText}>{t.about.problemList.limitedInfo}</Text>
         </View>
       </View>
 
       {/* Project Goal */}
       <View style={styles.section}>
-        <Text style={styles.heading}>Our Goal</Text>
-        <Text style={styles.paragraph}>
-          Our platform collects and uploads accurate geographic data for unrecognized areas, creating a comprehensive database of coordinates, landmarks, and access routes. This enables local communities to contribute and update geographic data, providing a reference for emergency services to reach critical locations faster.
-        </Text>
+        <Text style={styles.heading}>{t.about.goalTitle}</Text>
+        <Text style={styles.paragraph}>{t.about.goalText}</Text>
       </View>
 
       {/* How It Works */}
       <View style={styles.section}>
-        <Text style={styles.heading}>How It Works</Text>
+        <Text style={styles.heading}>{t.about.howItWorksTitle}</Text>
         <View style={styles.listItem}>
           <Text style={styles.number}>1.</Text>
-          <Text style={styles.listText}><Text style={styles.bold}>Collect Data</Text>: Local communities add accurate geographic information.</Text>
+          <Text style={styles.listText}>
+            <Text style={styles.bold}>{t.about.step1.split(':')[0]}</Text>: {t.about.step1.split(':')[1]}
+          </Text>
         </View>
         <View style={styles.listItem}>
           <Text style={styles.number}>2.</Text>
-          <Text style={styles.listText}><Text style={styles.bold}>Build Database</Text>: Information is uploaded and stored in a central database.</Text>
+          <Text style={styles.listText}>
+            <Text style={styles.bold}>{t.about.step2.split(':')[0]}</Text>: {t.about.step2.split(':')[1]}
+          </Text>
         </View>
         <View style={styles.listItem}>
           <Text style={styles.number}>3.</Text>
-          <Text style={styles.listText}><Text style={styles.bold}>Access for Emergency Services</Text>: Emergency services access the database for quick references.</Text>
+          <Text style={styles.listText}>
+            <Text style={styles.bold}>{t.about.step3.split(':')[0]}</Text>: {t.about.step3.split(':')[1]}
+          </Text>
         </View>
       </View>
 
       {/* Our Vision */}
       <View style={styles.section}>
-        <Text style={styles.heading}>Our Vision for the Future</Text>
-        <Text style={styles.paragraph}>
-          We envision a future where every unrecognized area in Israel has accurate, easily accessible geographic information, ensuring that emergency services can reach every corner of the country in record time.
-        </Text>
+        <Text style={styles.heading}>{t.about.visionTitle}</Text>
+        <Text style={styles.paragraph}>{t.about.visionText}</Text>
       </View>
 
       {/* Contact Us */}
       <View style={[styles.section, styles.contact]}>
-        <Text style={styles.heading}>Contact Us</Text>
+        <Text style={styles.heading}>{t.about.contactTitle}</Text>
         <Text style={styles.paragraph}>
-          Have questions? Reach out to us at{' '}
-          <Text style={styles.contactLink} onPress={() => Linking.openURL('mailto:support@example.com')}>
+          {t.about.contactText}{' '}
+          <Text
+            style={styles.contactLink}
+            onPress={() => Linking.openURL('mailto:support@example.com')}
+          >
             support@example.com
           </Text>
         </Text>
@@ -84,7 +89,6 @@ const AboutUs = () => {
     </ScrollView>
   );
 };
-
 const styles = StyleSheet.create({
   container: {
     paddingVertical: 20,

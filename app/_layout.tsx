@@ -7,8 +7,9 @@ import { useEffect } from 'react';
 import 'react-native-reanimated';
 
 import { useColorScheme } from '@/frontend/hooks/useColorScheme';
+import LanguageProvider from '@/frontend/context/LanguageProvider'; // ✅ لاحظ استخدام الـ default
 
-// Prevent the splash screen from auto-hiding before asset loading is complete.
+// منع شاشة البداية من الاختفاء تلقائيًا
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
@@ -28,13 +29,14 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
-      <Stack>
-        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
-      </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+    <LanguageProvider>
+      <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+        <Stack>
+          <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+          <Stack.Screen name="+not-found" />
+        </Stack>
+        <StatusBar style="auto" />
+      </ThemeProvider>
+    </LanguageProvider>
   );
 }
-/**/

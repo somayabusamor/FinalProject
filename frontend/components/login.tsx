@@ -1,16 +1,19 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet,I18nManager  } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios, { AxiosError } from 'axios';
-import { useTranslations, LocaleKeys } from '@/frontend/constants/locales';
+import { useTranslations } from '@/frontend/constants/locales';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useLanguage } from '@/frontend/context/LanguageProvider';
+import type { LocaleKeys } from '@/frontend/constants/locales/types'; 
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [language, setLanguage] = useState<LocaleKeys>('en');
-  const t = useTranslations(language);
+  const { language, changeLanguage } = useLanguage(); // عدل هذا السطر
+  const t = useTranslations();
 
   const handleLogin = async () => {
     try {
@@ -18,6 +21,10 @@ export default function Login() {
         email,
         password
       });
+      const storedLang = await AsyncStorage.getItem('appLanguage');
+      if (storedLang && ['en', 'ar', 'he'].includes(storedLang)) {
+        changeLanguage(storedLang as LocaleKeys);
+      }
   
       const role = response.data.user.role;
   
@@ -39,29 +46,15 @@ export default function Login() {
     }
   };
 
-  const changeLanguage = (lang: LocaleKeys) => {
-    setLanguage(lang);
-  };
 
   return (
     <View style={[
       styles.container,
-      { direction: language === 'ar' || language === 'he' ? 'rtl' : 'ltr' }
+      { direction: language === 'ar' || language === 'he' ? 'rtl' : 'ltr',
+        alignItems: language === 'ar' || language === 'he' ? 'flex-end' : 'flex-start' 
+
+       }
     ]}>
-      {/* Language Selector */}
-      <View style={styles.languageSelector}>
-        {(['en', 'ar', 'he'] as LocaleKeys[]).map((lang) => (
-          <TouchableOpacity
-            key={lang}
-            onPress={() => changeLanguage(lang)}
-            style={[styles.languageButton, language === lang && styles.activeLanguage]}
-          >
-            <Text style={styles.languageText}>
-              {lang === 'en' ? 'EN' : lang === 'ar' ? 'عربي' : 'עברית'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
 
       <View style={styles.header}>
         <MaterialIcons name="login" size={40} color="#FFD700" />
