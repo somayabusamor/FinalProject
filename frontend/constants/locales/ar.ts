@@ -1,4 +1,3 @@
-import HomePage from "app/(tabs)/homepage";
 
 export default {
     common: {
@@ -13,6 +12,11 @@ export default {
     auth: {
       signIn: "تسجيل الدخول",
       signUp: "إنشاء حساب",
+      logout:{
+        title:"تسجيل خروج",
+        message:" هل انت متأكد",
+        button:"زر",
+      } , // ✅ Add this line
       login: {
         title: "تسجيل الدخول",
         email: "البريد الإلكتروني",

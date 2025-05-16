@@ -1,4 +1,3 @@
-import HomePage from "app/(tabs)/homepage";
 
 export default {
     common: {
@@ -12,6 +11,11 @@ export default {
     },
     auth: {
       signIn: "התחברות",
+      logout: {
+        title: 'Logged Out',
+        message: 'You have been successfully logged out.',
+        button: 'Login Again',
+      },// ✅ Add this line
       signUp: "הרשמה",
       login: {
         title: "התחברות",

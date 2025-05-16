@@ -7,12 +7,14 @@ const path = require('path');
 const { User } = require('./models/User');
 const { Update } = require('./models/Update'); // Correct import
 const Village = require('./models/Village');
+const Landmark = require('./models/Landmark');
 const bcrypt = require('bcryptjs');
 const fs = require('fs');
-const landmarksRoute = require('./routes/landmarks'); // راوت اللاند ماركس
+const landmarksRoute = require('./routes/landmarks');
 const villageRoutes = require('./routes/villages.js') ;
 const updateRoute = require('./routes/Update'); // Import the update route
 const usersRoutes = require('./routes/users');
+const router = express.Router();  // Add this line
 
 const app = express();
 
@@ -28,9 +30,9 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/api', usersRoutes);
 app.use('/api/landmarks', landmarksRoute);
-// Use village routes
+// Correct (add village routes)
 app.use('/api/villages', villageRoutes);
-// Define the storage configuration for Multer
+// Use village routes
 const storage = multer.diskStorage({
     destination: (req, file, cb) => {
         cb(null, path.join(__dirname, 'uploads'));
@@ -42,7 +44,23 @@ const storage = multer.diskStorage({
 });
 
 const upload = multer({ storage }); // Ensure this is defined only once
-
+// GET /api/users - Fetch all users
+// Simple GET /api/users endpoint
+// In your backend index.js
+app.get('/api/users', async (req, res) => {
+    try {
+      const users = await User.find().select('-password').sort({ createdAt: -1 });
+      res.status(200).json({
+        success: true,
+        data: users
+      });
+    } catch (error) {
+      res.status(500).json({
+        success: false,
+        message: 'Failed to fetch users'
+      });
+    }
+  });
 // Remove the duplicate POST /api/signup route
 app.post("/api/signup", async (req, res) => {
     try {
@@ -137,22 +155,60 @@ app.get('/api/test-user', async (req, res) => {
         res.status(500).send('Error adding test user.');
     }
 });
+// GET single village
+router.get('/:id', async (req, res) => {
+  try {
+    const village = await Village.findById(req.params.id);
+    if (!village) {
+      return res.status(404).json({ error: 'Village not found' });
+    }
+    res.json(village);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
 
+// GET all villages (already in your index.js, but better here)
+// Update the villages GET endpoint to ensure proper image URLs
+app.get('/api/villages', async (req, res) => {
+  try {
+    const villages = await Village.find();
+    
+    // Map through villages to ensure proper image URLs
+    const villagesWithFullUrls = villages.map(village => ({
+      ...village._doc,
+      images: village.images.map(img => 
+        img.startsWith('http') ? img : `${req.protocol}://${req.get('host')}/${img.replace(/^\//, '')}`
+      )
+    }));
+
+    res.status(200).json(villagesWithFullUrls);
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error fetching villages', 
+      error: error.message 
+    });
+  }
+});
 app.post('/api/addVillage', async (req, res) => {
     try {
-        const { name, description, imageUrl } = req.body;
+        const { name, description, images } = req.body; // Changed from imageUrl to images
         
         if (!name || !description) {
             return res.status(400).json({ error: "Name and description are required" });
         }
 
+        if (!images || images.length === 0) {
+            return res.status(400).json({ error: "At least one image is required" });
+        }
+
         const newVillage = new Village({
             name,
             description,
-            images: imageUrl ? [imageUrl] : [], // Store in images array
+            images, // Now accepts array directly
             location: {
                 type: 'Point',
-                coordinates: [0, 0]
+                coordinates: [0, 0] // Default coordinates
             }
         });
 
@@ -161,7 +217,7 @@ app.post('/api/addVillage', async (req, res) => {
             _id: newVillage._id,
             name: newVillage.name,
             description: newVillage.description,
-            image: newVillage.images[0] || null // Also return as flat image property
+            images: newVillage.images // Return full images array
         });
     } catch (error) {
         console.error("Error:", error);
@@ -171,16 +227,60 @@ app.post('/api/addVillage', async (req, res) => {
         });
     }
 });
+    app.get('/api/villages', async (req, res) => {
+        try {
+        const villages = await Village.find();
+        res.status(200).json(villages);
+        } catch (error) {
+        res.status(500).json({ message: 'Error fetching villages', error: error.message });
+        }
+    });
+    // نقاط API// API endpoints
+app.post('/api/landmarks', async (req, res) => {
+  try {
+    const landmark = new Landmark({
+      ...req.body,
+      verified: false,
+      votes: []
+    });
+    await landmark.save();
+    res.status(201).json(landmark);
+  } catch (error) {
+    res.status(400).json({ error: error.message });
+  }
+});
 
-app.get('/api/villages', async (req, res) => {
-    try {
-      const villages = await Village.find();
-      res.status(200).json(villages);
-    } catch (error) {
-      res.status(500).json({ message: 'Error fetching villages', error: error.message });
-    }
-  });
-  
+
+// Improved vote endpoint
+app.post("/api/landmarks/:id/vote", async (req, res) => {
+  const { id } = req.params;
+  const { vote } = req.body;
+
+  if (!vote || !['yes', 'no'].includes(vote)) {
+    return res.status(400).json({ message: "Invalid vote type" });
+  }
+
+  const landmark = await Landmark.findById(id);
+  if (!landmark) return res.status(404).json({ message: "Landmark not found" });
+
+  if (vote === "yes") landmark.yesVotes += 1;
+  if (vote === "no") landmark.noVotes += 1;
+
+  await landmark.save();
+  res.json(landmark);
+});
+
+app.delete("/update/:id", async (req, res) => {
+  try {
+    const { id } = req.params;
+    await Landmark.findByIdAndDelete(id);
+    res.status(200).json({ message: "Landmark deleted" });
+  } catch (error) {
+    console.error("Error deleting landmark:", error);
+    res.status(500).json({ error: "Server error deleting landmark" });
+  }
+});
+
 mongoose.connect(process.env.DB)
     .then(() => { console.log('MongoDB connected successfully'); })
     .catch((err) => console.error('MongoDB connection error:', err));

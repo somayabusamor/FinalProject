@@ -27,6 +27,8 @@ const Signup = () => {
     role: "local",
   });
   const [error, setError] = useState<string>("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [successMessage, setSuccessMessage] = useState("");
 
   const handleChange = (field: keyof SignupData, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }));
@@ -37,6 +39,10 @@ const Signup = () => {
       setError(t.auth.signup.passwordMismatch);
       return;
     }
+
+    setIsSubmitting(true);
+    setError("");
+    setSuccessMessage("");
 
     try {
       const url = `http://localhost:8082/api/signup`;
@@ -125,6 +131,13 @@ const Signup = () => {
             <TouchableOpacity style={styles.button} onPress={handleSubmit}>
               <Text style={styles.buttonText}>{t.auth.signup.button}</Text>
             </TouchableOpacity>
+
+            {successMessage ? (
+              <View style={styles.successContainer}>
+                <MaterialIcons name="check-circle" size={24} color="#4CAF50" />
+                <Text style={styles.successText}>{successMessage}</Text>
+              </View>
+            ) : null}
 
             <View style={styles.loginLinkContainer}>
               <Text style={styles.loginText}>{t.auth.signup.loginPrompt}</Text>
@@ -259,6 +272,23 @@ const styles = StyleSheet.create({
     color: '#d32f2f',
     marginBottom: 15,
     textAlign: 'center',
+  },
+  successContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 20,
+    padding: 10,
+    backgroundColor: 'rgba(76, 175, 80, 0.1)',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+  },
+  successText: {
+    color: '#4CAF50',
+    fontSize: 16,
+    fontWeight: 'bold',
+    marginLeft: 8,
   },
 });
 
