@@ -1,6 +1,7 @@
 import { Tabs } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IconSymbol } from '@/frontend/components/ui/IconSymbol';
 import TabBarBackground from '@/frontend/components/ui/TabBarBackground';
 import { HapticTab } from '@/frontend/components/HapticTab';
@@ -13,9 +14,22 @@ export default function TabLayout() {
   useEffect(() => {
     I18nManager.forceRTL(I18nManager.isRTL);
   }, []);
+  const [role, setRole] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchRole = async () => {
+      try {
+        const storedRole = await AsyncStorage.getItem('userRole');
+        setRole(storedRole);
+      } catch (error) {
+        console.error('Error fetching role from AsyncStorage:', error);
+      }
+    };
+    fetchRole();
+  }, []);
 
   if (!role) {
-    return null;
+    return null; // You could show a loading indicator here instead
   }
 
   return (
@@ -43,15 +57,15 @@ export default function TabLayout() {
         },
       }}
     >
-      {/* Always visible tabs */}
       <Tabs.Screen
         name="homepage"
         options={{
-          title: 'Home',
+          title: 'HomePage',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
 
+      {/* Show for everyone */}
       <Tabs.Screen
         name="ContactUs"
         options={{
@@ -59,6 +73,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="envelope.fill" color={color} />,
         }}
       />
+      
       <Tabs.Screen
         name="AboutUs"
         options={{
@@ -67,14 +82,27 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Hidden tab - won't appear in tab bar but remains accessible */}
-      <Tabs.Screen
-        name="local"
-        options={{
-          href: null,
-          title: 'Local',
-        }}
-      />
+      {/* Only show location tab for non-emergency roles */}
+      {role !== 'emergency' && (
+        <Tabs.Screen
+          name="location"
+          options={{
+            title: 'Location',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="location.fill" color={color} />,
+          }}
+        />
+      )}
+
+      {/* If you had a local tab, you would conditionally render it like this: */}
+      {/* {role !== 'emergency' && (
+        <Tabs.Screen
+          name="local"
+          options={{
+            title: 'Local',
+            tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
+          }}
+        />
+      )} */}
     </Tabs>
   );
 }

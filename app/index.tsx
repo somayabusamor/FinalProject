@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useTranslations } from '@/frontend/constants/locales';
 import type { LocaleKeys } from '@/frontend/constants/locales/types';
 import axios from 'axios';
+import { useLanguage } from '@/frontend/context/LanguageProvider';
 import { MaterialIcons } from '@expo/vector-icons';
 
 type Village = {
@@ -18,11 +19,11 @@ type Village = {
 export default function MainIndex() {
   const router = useRouter();
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const [language, setLanguage] = useState<LocaleKeys>('en');
+  const { language, changeLanguage, isRTL } = useLanguage();
   const [villages, setVillages] = useState<Village[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const t = useTranslations(language);
+  const t = useTranslations();
   const baseUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8082";
  
   useEffect(() => {
@@ -63,8 +64,8 @@ export default function MainIndex() {
         return {
           ...village,
           id: village._id,
-          name: village.names[language] || village.name,
-          description: village.descriptions[language] || village.description
+          name: village.names[language as LocaleKeys] || village.name,
+          description: village.descriptions[language as LocaleKeys] || village.description
         };
       }
       return {
@@ -85,10 +86,6 @@ export default function MainIndex() {
     }).start();
   }, []);
 
-  const changeLanguage = (lang: LocaleKeys) => {
-    setLanguage(lang);
-  };
-
   if (loading) {
     return (
       <View style={[styles.container, styles.loadingContainer]}>
@@ -103,7 +100,7 @@ export default function MainIndex() {
         <Text style={styles.errorText}>{error}</Text>
         <TouchableOpacity 
           style={styles.retryButton}
-          onPress={() => window.location.reload()}
+          onPress={() => location.reload()}
         >
           <Text style={styles.retryButtonText}>Retry</Text>
         </TouchableOpacity>
@@ -252,6 +249,7 @@ export default function MainIndex() {
     </View>
   );
 }
+
 
 const styles = StyleSheet.create({
   container: {
@@ -467,5 +465,15 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontSize: 16,
     fontWeight: 'bold',
+  },
+  languageButton: {
+    paddingHorizontal: 10,
+  },
+  languageText: {
+    color: '#fff',
+  },
+  activeLanguage: {
+    borderBottomWidth: 2,
+    borderBottomColor: '#fff',
   },
 });

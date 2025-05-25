@@ -1,6 +1,11 @@
 import { View, Text, TouchableOpacity, ScrollView, StyleSheet, Image, Alert } from 'react-native';
 import { Tabs, useRouter } from 'expo-router';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useLanguage } from '@/frontend/context/LanguageProvider';
+import { useTranslations } from '@/frontend/constants/locales';
+import { I18nManager } from 'react-native';
+
+
 import { IconSymbol } from '@/frontend/components/ui/IconSymbol';
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -24,6 +29,8 @@ interface UserData {
   isSuperLocal: boolean;
 }
 export default function LocalPage() {
+  const { language } = useLanguage();
+  const  t  = useTranslations();
   const router = useRouter();
   const [role, setRole] = useState<string | null>(null);
   // Then in your component:
@@ -302,17 +309,17 @@ export default function LocalPage() {
           <View style={styles.card}>
             <View style={styles.cardHeader}>
               <MaterialIcons name="bolt" size={24} color="#6d4c41" />
-              <Text style={styles.cardTitle}>Quick Actions</Text>
+              <Text style={styles.cardTitle}>{t.localPage.quick_actions}</Text>
             </View>
             <TouchableOpacity style={styles.goldButton}>
               <MaterialIcons name="report" size={20} color="#6d4c41" />
-              <Text style={styles.goldButtonText}>Report Issue</Text>
+              <Text style={styles.goldButtonText}>{t.localPage.report_issue}</Text>
             </TouchableOpacity>
           </View>
         </View>
       </ScrollView>
     </View>
-  );
+  );  
 }
 const styles = StyleSheet.create({
   container: {

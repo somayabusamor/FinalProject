@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from "react";
-import { PlotlyHTMLElement } from 'plotly.js';
+import Plotly from 'plotly.js';
 import axios from 'axios';
 const API_BASE_URL = 'http://localhost:8082/api'; // Adjust to your backend URL
 // Add this at the top of your file
@@ -30,7 +30,8 @@ interface VoteResponse {
 }
 
 const HomePage: React.FC = () => {
-  const mapRef = useRef<HTMLDivElement>(null);
+  const mapRef = useRef<HTMLDivElement | null>(null);
+
   const [location, setLocation] = useState<Location | null>(null);
   const [clickedLocation, setClickedLocation] = useState<Location | null>(null);
   const [landmarks, setLandmarks] = useState<Landmark[]>([]);
@@ -285,7 +286,7 @@ voteButtonYes: {
     renderMap();
   }, [landmarks]);
 
-  useEffect(() => {
+ useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {

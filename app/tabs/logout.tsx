@@ -1,33 +1,18 @@
 import React from 'react';
 import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
 import { useRouter } from 'expo-router';
-import { useTranslations } from '@/frontend/constants/locales';
-import type { LocaleKeys } from '@/frontend/constants/locales/types';
 import { MaterialIcons } from '@expo/vector-icons';
-
-// Define a type to match the expected structure of translations
-interface LogoutTranslation {
-  auth: {
-    logout: {
-      title: string;
-      message: string;
-      button: string;
-    };
-  };
-}
+import { useTranslations } from '@/frontend/constants/locales';
+import { useLanguage } from '@/frontend/context/LanguageProvider';
 
 export default function Logout() {
   const router = useRouter();
-  const [language, setLanguage] = React.useState<LocaleKeys>('en');
-  const t = useTranslations(language) as LogoutTranslation; // type assertion
+  const { language, changeLanguage } = useLanguage();
+  const t = useTranslations(); // يأخذ اللغة من السياق تلقائيًا
 
   const handleLogout = () => {
-    // Clear tokens, local storage, etc. if used
+    // تنظيف الجلسة مثلاً من AsyncStorage أو SecureStore (إذا استُخدمت)
     router.replace("http://localhost:8081");
-  };
-
-  const changeLanguage = (lang: LocaleKeys) => {
-    setLanguage(lang);
   };
 
   return (
@@ -35,20 +20,8 @@ export default function Logout() {
       styles.container,
       { direction: language === 'ar' || language === 'he' ? 'rtl' : 'ltr' }
     ]}>
-      {/* Language Selector */}
-      <View style={styles.languageSelector}>
-        {(['en', 'ar', 'he'] as LocaleKeys[]).map((lang) => (
-          <TouchableOpacity
-            key={lang}
-            onPress={() => changeLanguage(lang)}
-            style={[styles.languageButton, language === lang && styles.activeLanguage]}
-          >
-            <Text style={styles.languageText}>
-              {lang === 'en' ? 'EN' : lang === 'ar' ? 'عربي' : 'עברית'}
-            </Text>
-          </TouchableOpacity>
-        ))}
-      </View>
+      {/* اختيار اللغة */}
+
 
       <View style={styles.header}>
         <MaterialIcons name="logout" size={40} color="#FFD700" />
