@@ -55,24 +55,24 @@ const VillageDetail = () => {
     setCurrentIndex(newIndex);
   };
 
-  // Markdown styles with proper typing
+  // Updated markdown styles to match the theme
   const markdownStyles = {
     body: {
-      color: '#5b3a29',
+      color: '#5d4037',
       fontSize: 16,
       lineHeight: 24,
     },
     heading1: {
       fontSize: 24,
       fontWeight: 'bold',
-      color: '#8b5e3c',
+      color: '#6d4c41',
       marginTop: 20,
       marginBottom: 10,
     },
     heading2: {
       fontSize: 20,
       fontWeight: 'bold',
-      color: '#8b5e3c',
+      color: '#6d4c41',
       marginTop: 15,
       marginBottom: 8,
     },
@@ -80,7 +80,7 @@ const VillageDetail = () => {
       marginBottom: 15,
     },
     link: {
-      color: '#8b5e3c',
+      color: '#6d4c41',
       textDecorationLine: 'underline' as const,
     },
   };
@@ -121,7 +121,7 @@ const VillageDetail = () => {
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator size="large" color="#8b5e3c" />
+        <ActivityIndicator size="large" color="#6d4c41" />
       </View>
     );
   }
@@ -219,8 +219,11 @@ const VillageDetail = () => {
         )}
       </View>
 
-      <TouchableOpacity style={styles.button} onPress={() => router.back()}>
-        <MaterialIcons name="arrow-back" size={20} color="#fff" />
+      <TouchableOpacity 
+        style={styles.button} 
+        onPress={() => router.back()}
+      >
+        <MaterialIcons name="arrow-back" size={20} color="#FFD700" />
         <Text style={styles.buttonText}>Back to Villages</Text>
       </TouchableOpacity>
     </ScrollView>
@@ -230,19 +233,19 @@ const VillageDetail = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f1e1',
+    backgroundColor: '#fff',
   },
   contentContainer: {
     paddingBottom: 40,
   },
   header: {
     padding: 20,
-    backgroundColor: '#8b5e3c',
+    backgroundColor: '#6d4c41',
   },
   title: {
     fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
+    color: '#FFD700',
     textAlign: 'center',
   },
   galleryContainer: {
@@ -261,19 +264,29 @@ const styles = StyleSheet.create({
     height: 150,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#e0d6c2',
+    backgroundColor: '#f0e6e2',
   },
   placeholderText: {
-    color: '#5b3a29',
+    color: '#8d6e63',
     fontSize: 16,
   },
   contentWrapper: {
     padding: 20,
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    margin: 20,
+    borderWidth: 1,
+    borderColor: '#f0e6e2',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 6,
+    elevation: 5,
   },
   sectionTitle: {
     fontSize: 20,
     fontWeight: 'bold',
-    color: '#8b5e3c',
+    color: '#6d4c41',
     marginBottom: 15,
   },
   thumbnailGallery: {
@@ -286,7 +299,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   activeThumbnail: {
-    borderColor: '#8b5e3c',
+    borderColor: '#6d4c41',
   },
   thumbnail: {
     width: 80,
@@ -297,21 +310,23 @@ const styles = StyleSheet.create({
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
+    backgroundColor: '#fff',
   },
   errorContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
+    backgroundColor: '#fff',
   },
   errorText: {
-    color: '#d9534f',
+    color: '#d32f2f',
     fontSize: 18,
     marginBottom: 20,
     textAlign: 'center',
   },
   button: {
-    backgroundColor: '#8b5e3c',
+    backgroundColor: '#6d4c41',
     padding: 15,
     borderRadius: 10,
     margin: 20,
@@ -319,9 +334,14 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 3,
+    elevation: 3,
   },
   buttonText: {
-    color: '#fff',
+    color: '#FFD700',
     fontSize: 16,
     fontWeight: 'bold',
   },

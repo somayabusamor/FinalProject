@@ -1,45 +1,83 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import axios, { AxiosError } from 'axios';
 import { useTranslations, LocaleKeys } from '@/frontend/constants/locales';
 import { MaterialIcons } from '@expo/vector-icons';
-import AsyncStorage from '@react-native-async-storage/async-storage'; // already installed in your project
-
+import AsyncStorage from '@react-native-async-storage/async-storage';
+interface ErrorResponse {
+  message?: string;
+  error?: string;
+  [key: string]: any; // For any additional properties
+}
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [language, setLanguage] = useState<LocaleKeys>('en');
+  const [loading, setLoading] = useState(false); // Add loading state
+  const [error, setError] = useState(''); // Add error state
   const t = useTranslations(language);
+  
 
-  const handleLogin = async () => {
+const handleLogin = async () => {
+  setLoading(true);
+  setError('');
   try {
-    const response = await axios.post('http://localhost:8082/api/login', {
-      email,
-      password
+    // DEBUG: Log the exact credentials being sent
+    console.log('Attempting login with:', { email, password });
+
+    const response = await axios.post('http://localhost:8082/api/auth/login', {
+      email: email.trim(), // Trim whitespace
+      password: password.trim() // Trim whitespace
     });
 
-    const role = response.data.user.role;
+    // DEBUG: Full response
+    console.log('Login response:', response.data);
 
-    // Store role in AsyncStorage
-    await AsyncStorage.setItem('userRole', role);
+    // Verify token exists
+    if (!response.data.token) {
+      throw new Error('No token received');
+    }
 
-    if (role === "local") {
-      router.push('/local');
-    } else if (role === "emergency") {
-      router.push('/(tabs)/homepage');
-    } else if (role === "admin") {
-      router.push('/admin');
+    // Store auth data
+    await AsyncStorage.multiSet([
+      ['user', JSON.stringify(response.data.user)],
+      ['token', response.data.token],
+      ['userRole', response.data.user.role]
+    ]);
+
+    // DEBUG: Verify storage
+    const storedToken = await AsyncStorage.getItem('token');
+    console.log('Stored token:', storedToken);
+
+    // Redirect based on role
+    switch(response.data.user.role.toLowerCase()) {
+      case 'local':
+        router.replace('/(tabs)/local');
+        break;
+      case 'emergency':
+        router.replace('/(tabs)/homepage');
+        break;
+      case 'admin':
+        router.replace('/admin');
+        break;
+      default:
+        router.replace('/');
     }
 
   } catch (error) {
     const err = error as AxiosError;
-    if (err.response) {
-      console.log("Login error response:", err.response.data);
-    } else {
-      console.log("Login error:", err.message);
-    }
+    console.error('Login error:', {
+      status: err.response?.status,
+      data: err.response?.data,
+      message: err.message
+    });
+
+    const errorData = err.response?.data as ErrorResponse;
+    setError(errorData?.message || 'Login failed. Please try again.');
+  } finally {
+    setLoading(false);
   }
 };
   const changeLanguage = (lang: LocaleKeys) => {
@@ -72,6 +110,10 @@ export default function Login() {
       </View>
 
       <View style={styles.formContainer}>
+        {error ? (
+          <Text style={styles.errorText}>{error}</Text>
+        ) : null}
+        
         <TextInput
           style={styles.input}
           placeholder={t.auth.login.email}
@@ -91,8 +133,16 @@ export default function Login() {
           textAlign={language === 'ar' || language === 'he' ? 'right' : 'left'}
         />
         
-        <TouchableOpacity style={styles.button} onPress={handleLogin}>
-          <Text style={styles.buttonText}>{t.auth.login.button}</Text>
+        <TouchableOpacity 
+          style={styles.button} 
+          onPress={handleLogin}
+          disabled={loading}
+        >
+          {loading ? (
+            <ActivityIndicator color="#FFD700" />
+          ) : (
+            <Text style={styles.buttonText}>{t.auth.login.button}</Text>
+          )}
         </TouchableOpacity>
         
         <View style={styles.signupLinkContainer}>
@@ -209,5 +259,10 @@ const styles = StyleSheet.create({
   languageText: {
     color: '#6d4c41',
     fontWeight: 'bold',
+  },
+  errorText: {
+    color: '#f44336',
+    marginBottom: 15,
+    textAlign: 'center',
   },
 });

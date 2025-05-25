@@ -25,7 +25,7 @@ export default function TabLayout() {
   }, []);
 
   if (!role) {
-    return null; // You could show a loading indicator here instead
+    return null;
   }
 
   return (
@@ -53,6 +53,7 @@ export default function TabLayout() {
         },
       }}
     >
+      {/* Always visible tabs */}
       <Tabs.Screen
         name="homepage"
         options={{
@@ -61,7 +62,6 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Show for everyone */}
       <Tabs.Screen
         name="ContactUs"
         options={{
@@ -78,27 +78,14 @@ export default function TabLayout() {
         }}
       />
 
-      {/* Only show location tab for non-emergency roles */}
-      {role !== 'emergency' && (
-        <Tabs.Screen
-          name="location"
-          options={{
-            title: 'Location',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="location.fill" color={color} />,
-          }}
-        />
-      )}
-
-      {/* If you had a local tab, you would conditionally render it like this: */}
-      {/* {role !== 'emergency' && (
-        <Tabs.Screen
-          name="local"
-          options={{
-            title: 'Local',
-            tabBarIcon: ({ color }) => <IconSymbol size={28} name="map.fill" color={color} />,
-          }}
-        />
-      )} */}
+      {/* Hidden tab - won't appear in tab bar but remains accessible */}
+      <Tabs.Screen
+        name="local"
+        options={{
+          href: null,
+          title: 'Local',
+        }}
+      />
     </Tabs>
   );
 }

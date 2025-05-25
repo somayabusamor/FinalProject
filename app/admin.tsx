@@ -1,18 +1,20 @@
 import { useRouter } from 'expo-router';
-import { 
-  View, 
-  Text, 
-  TouchableOpacity, 
-  StyleSheet, 
-  ScrollView, 
-  FlatList, 
-  ActivityIndicator, 
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  StyleSheet,
+  ScrollView,
+  FlatList,
+  ActivityIndicator,
   Alert,
-  RefreshControl
+  RefreshControl,
+  Image
 } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
 import { useEffect, useState } from 'react';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 interface User {
   _id: string;
@@ -20,25 +22,37 @@ interface User {
   email: string;
   role: string;
   createdAt: string;
+  isSuperLocal?: boolean;
+}
+
+interface SuperLocalRequest {
+  _id: string;
+  userId: string;
+  name: string;
+  email: string;
+  status: 'pending' | 'approved' | 'rejected';
+  createdAt: string;
+  avatar?: string;
 }
 
 export default function AdminDashboard() {
+  const [superLocalRequests, setSuperLocalRequests] = useState<SuperLocalRequest[]>([]);
+  const [showRequests, setShowRequests] = useState(false);
   const router = useRouter();
   const [users, setUsers] = useState<User[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [showUsers, setShowUsers] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
-  
-  // Declare baseUrl only once at the component level
-  const baseUrl = process.env.EXPO_PUBLIC_API_URL || "http://localhost:8082";
+  const [processingRequests, setProcessingRequests] = useState<Record<string, boolean>>({});
+  const baseUrl = "http://localhost:8082";
 
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
       console.log(`Fetching from: ${baseUrl}/api/users`);
-      
+
       const response = await axios.get(`${baseUrl}/api/users`, {
         timeout: 5000,
         headers: {
@@ -55,8 +69,8 @@ export default function AdminDashboard() {
       let errorMessage = 'Failed to fetch users';
       if (axios.isAxiosError(error)) {
         errorMessage = error.response?.data?.message || 
-                     error.message || 
-                     'Network error occurred';
+            error.message || 
+                'Network error occurred';
       }
       setError(errorMessage);
       console.error('Fetch error:', error);
@@ -78,11 +92,129 @@ export default function AdminDashboard() {
     }
   }, [showUsers]);
 
-  const handleRoleManagement = (userId: string) => {
-    // Implement role management logic here
-    Alert.alert('Role Management', `Change role for user ${userId}`);
+  useEffect(() => {
+    fetchSuperLocalRequests();
+  }, []);
+
+  const fetchSuperLocalRequests = async () => {
+    try {
+      setLoading(true);
+      const token = await AsyncStorage.getItem('token');
+      
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      const response = await axios.get(
+        `${baseUrl}/api/auth/superlocal/requests`,
+        {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }
+      );
+
+      console.log('API Response:', response.data);
+
+      if (response.data?.success) {
+        const requests = response.data.requests.map((request: SuperLocalRequest) => ({
+          ...request,
+          name: request.name || 'Unknown',
+          email: request.email || 'No email'
+        }));
+        
+        setSuperLocalRequests(requests);
+        await AsyncStorage.setItem(
+          'superLocalRequests',
+          JSON.stringify(requests)
+        );
+      } else {
+        throw new Error('Invalid response format');
+      }
+    } catch (error) {
+      console.error('Error fetching requests:', error);
+      
+      const cachedRequests = await AsyncStorage.getItem('superLocalRequests');
+      if (cachedRequests) {
+        setSuperLocalRequests(JSON.parse(cachedRequests));
+        Alert.alert(
+          'Warning',
+          'Using cached data. Could not fetch latest requests.'
+        );
+      } else {
+        Alert.alert(
+          'Error',
+          'Failed to load requests. Please check your connection.'
+        );
+      }
+    } finally {
+      setLoading(false);
+    }
   };
 
+  const handleRequestDecision = async (requestId: string, decision: 'approve' | 'reject') => {
+  try {
+    setProcessingRequests(prev => ({ ...prev, [requestId]: true }));
+    
+    const token = await AsyncStorage.getItem('token');
+    if (!token) {
+      Alert.alert('Error', 'Authentication token not found');
+      return;
+    }
+
+    const status = decision === 'approve' ? 'approved' : 'rejected';
+    
+    // Optimistic UI update - remove the request immediately
+    setSuperLocalRequests(prev => 
+      prev.filter(req => req._id !== requestId)
+    );
+
+    const response = await axios.patch(
+      `${baseUrl}/api/auth/superlocal/requests/${requestId}`, // Note the /auth added
+      { status },
+      {
+        headers: {
+          'Authorization': `Bearer ${token}`
+        }
+      }
+    ).catch(error => {
+      // Revert optimistic update on error
+      fetchSuperLocalRequests(); // Refresh the list
+      throw error;
+    });
+    
+    if (response.data?.success) {
+      // If approved, update the users list if it's being shown
+      if (decision === 'approve' && response.data.updatedUser) {
+        setUsers(prevUsers => 
+          prevUsers.map(user => 
+            user._id === response.data.updatedUser._id
+              ? { ...user, isSuperLocal: true }
+              : user
+          )
+        );
+      }
+      
+      Alert.alert('Success', `Request ${status} successfully`);
+    } else {
+      throw new Error(response.data?.message || 'Failed to update request');
+    }
+  } catch (error) {
+    console.error('Decision error:', error);
+    
+    let errorMessage = 'Failed to process request';
+    if (axios.isAxiosError(error)) {
+      errorMessage = error.response?.data?.message || error.message;
+    } else if (error instanceof Error) {
+      errorMessage = error.message;
+    }
+
+    Alert.alert('Error', errorMessage);
+  } finally {
+    setProcessingRequests(prev => ({ ...prev, [requestId]: false }));
+  }
+};
   return (
     <View style={styles.container}>
       {/* Header */}
@@ -92,10 +224,10 @@ export default function AdminDashboard() {
           <View style={styles.headerActions}>
             <TouchableOpacity 
               style={styles.logoutButton}
-              onPress={() => router.push('http://localhost:8081/')}
+              onPress={() => router.push('/')}
             >
               <MaterialIcons name="logout" size={24} color="#FFD700" />
-              <Text style={styles.logoutButton}>Logout</Text>
+              <Text style={styles.logoutText}>Logout</Text>
             </TouchableOpacity>
 
             <TouchableOpacity 
@@ -132,15 +264,17 @@ export default function AdminDashboard() {
             <Text style={styles.statValue}>4</Text>
           </View>
           <View style={styles.statCard}>
-            <Text style={styles.statLabel}>Pending Actions</Text>
-            <Text style={styles.statValue}>1</Text>
+            <Text style={styles.statLabel}>Pending Requests</Text>
+            <Text style={styles.statValue}>
+              {superLocalRequests.filter(req => req.status === 'pending').length}
+            </Text>
           </View>
           <View style={[styles.statCard, { borderBottomColor: '#8d6e63' }]}>
             <Text style={styles.statLabel}>System Health</Text>
             <Text style={[styles.statValue, { color: '#8d6e63' }]}>100%</Text>
           </View>
         </View>
-
+        
         {/* Admin Tools */}
         <View style={styles.toolsContainer}>
           {/* User Management */}
@@ -160,12 +294,6 @@ export default function AdminDashboard() {
                 onPress={() => router.push('/signup')}
               >
                 <Text style={styles.buttonText}>Create New User</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                style={[styles.button, { backgroundColor: '#5d4037' }]}
-                onPress={() => Alert.alert('Feature Coming Soon', 'Role management will be available in the next update')}
-              >
-                <Text style={styles.buttonText}>Manage Roles</Text>
               </TouchableOpacity>
             </View>
 
@@ -205,21 +333,17 @@ export default function AdminDashboard() {
                       <View style={styles.userRow}>
                         <Text style={styles.userCell}>{item.name}</Text>
                         <Text style={styles.userCell}>{item.email}</Text>
-                        <Text style={[styles.userCell, 
-                          item.role === 'admin' ? styles.adminRole : 
-                          item.role === 'emergency' ? styles.emergencyRole : 
-                          styles.localRole]}>
+                        <Text style={[
+                          styles.userCell,
+                          item.role === 'admin' ? styles.adminRole :
+                          item.role === 'emergency' ? styles.emergencyRole :
+                          styles.localRole
+                        ]}>
                           {item.role}
                         </Text>
                         <Text style={styles.userCell}>
-                          {new Date(item.createdAt).toLocaleDateString()}
+                          {item.isSuperLocal ? 'Yes' : 'No'}
                         </Text>
-                        <TouchableOpacity
-                          style={styles.actionButton}
-                          onPress={() => handleRoleManagement(item._id)}
-                        >
-                          <MaterialIcons name="edit" size={18} color="#8b5e3c" />
-                        </TouchableOpacity>
                       </View>
                     )}
                     ListHeaderComponent={() => (
@@ -227,10 +351,104 @@ export default function AdminDashboard() {
                         <Text style={styles.headerCell}>Name</Text>
                         <Text style={styles.headerCell}>Email</Text>
                         <Text style={styles.headerCell}>Role</Text>
-                        <Text style={styles.headerCell}>Joined</Text>
-                        <Text style={styles.headerCell}>Actions</Text>
+                        <Text style={styles.headerCell}>Super Local</Text>
                       </View>
                     )}
+                  />
+                )}
+              </View>
+            )}
+          </View>
+
+          {/* Super Local Requests */}
+          <View style={styles.toolCard}>
+            <Text style={styles.toolTitle}>Super Local Requests</Text>
+            <View style={styles.buttonGroup}>
+              <TouchableOpacity 
+                style={[styles.button, { backgroundColor: '#6d4c41' }]}
+                onPress={() => {
+                  setShowRequests(!showRequests);
+                  fetchSuperLocalRequests();
+                }}
+              >
+                <Text style={styles.buttonText}>
+                  {showRequests ? 'Hide Requests' : 'View Requests'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {showRequests && (
+              <View style={styles.usersTable}>
+                {loading ? (
+                  <ActivityIndicator size="large" color="#8b5e3c" />
+                ) : (
+                  <FlatList
+                    data={superLocalRequests}
+                    keyExtractor={(item) => item._id}
+                    renderItem={({ item }) => (
+                      <View style={styles.requestRow}>
+                        <View style={styles.requestInfo}>
+                          {item.avatar && (
+                            <Image 
+                              source={{ uri: item.avatar }} 
+                              style={styles.requestAvatar}
+                            />
+                          )}
+                          <View style={styles.requestDetails}>
+                            <Text style={styles.requestName}>{item.name}</Text>
+                            <Text style={styles.requestEmail}>{item.email}</Text>
+                            <View style={styles.statusContainer}>
+                              <Text style={styles.requestLabel}>Status: </Text>
+                              <Text style={[styles.statusText, styles[item.status]]}>
+                                {item.status}
+                              </Text>
+                            </View>
+                            <View style={styles.statusContainer}>
+                              <Text style={styles.requestLabel}>Date: </Text>
+                              <Text style={styles.requestDate}>
+                                {new Date(item.createdAt).toLocaleDateString('en-US', {
+                                  month: 'numeric',
+                                  day: 'numeric',
+                                  year: 'numeric'
+                                })}
+                              </Text>
+                            </View>
+                          </View>
+                        </View>
+                        {item.status === 'pending' && (
+                          <View style={styles.requestActions}>
+                            <TouchableOpacity
+                              style={[styles.requestButton, styles.approveButton]}
+                              onPress={() => handleRequestDecision(item._id, 'approve')}
+                              disabled={processingRequests[item._id]}
+                            >
+                              {processingRequests[item._id] ? (
+                                <ActivityIndicator color="white" size="small" />
+                              ) : (
+                                <Text style={styles.requestButtonText}>Approve</Text>
+                              )}
+                            </TouchableOpacity>
+                            <TouchableOpacity
+                              style={[styles.requestButton, styles.rejectButton]}
+                              onPress={() => handleRequestDecision(item._id, 'reject')}
+                              disabled={processingRequests[item._id]}
+                            >
+                              {processingRequests[item._id] ? (
+                                <ActivityIndicator color="white" size="small" />
+                              ) : (
+                                <Text style={styles.requestButtonText}>Reject</Text>
+                              )}
+                            </TouchableOpacity>
+                          </View>
+                        )}
+                      </View>
+                    )}
+                    ListEmptyComponent={
+                      <View style={styles.emptyState}>
+                        <MaterialIcons name="list-alt" size={50} color="#8d6e63" />
+                        <Text style={styles.emptyText}>No requests found</Text>
+                      </View>
+                    }
                   />
                 )}
               </View>
@@ -241,10 +459,24 @@ export default function AdminDashboard() {
     </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
+  },
+  statusContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  requestLabel: {
+    fontSize: 14,
+    color: '#5d4037',
+  },
+  statusText: {
+    fontSize: 14,
+    fontWeight: 'bold',
   },
   header: {
     backgroundColor: '#6d4c41',
@@ -272,13 +504,16 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingVertical: 8,
     paddingHorizontal: 12,
     borderRadius: 20,
- 
-    color: '#FFD700',
     marginRight: 10,
-    padding: 8,
+  },
+  logoutText: {
+    color: '#FFD700',
+    marginLeft: 5,
   },
   addButton: {
     flexDirection: 'row',
@@ -378,6 +613,38 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     overflow: 'hidden',
   },
+  requestDetails: {
+    flex: 1,
+    marginLeft: 10,
+  },
+  requestName: {
+    fontWeight: 'bold',
+    fontSize: 16,
+    color: '#5d4037',
+    marginBottom: 4,
+  },
+  requestEmail: {
+    fontSize: 14,
+    color: '#8d6e63',
+    marginBottom: 4,
+  },
+  pending: {
+    color: '#f0ad4e',
+    fontWeight: 'bold',
+  },
+  approved: {
+    color: '#5cb85c',
+    fontWeight: 'bold',
+  },
+  rejected: {
+    color: '#d9534f',
+    fontWeight: 'bold',
+  },
+  requestDate: {
+    fontSize: 12,
+    color: '#a1887f',
+    fontStyle: 'italic',
+  },
   userRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -399,7 +666,46 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     color: '#5d4037',
   },
-  // Add these new styles:
+  requestRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 15,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0e0e0',
+  },
+  requestInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  requestAvatar: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+  },
+  requestActions: {
+    flexDirection: 'row',
+  },
+  requestButton: {
+    paddingVertical: 6,
+    paddingHorizontal: 12,
+    borderRadius: 4,
+    marginLeft: 8,
+    minWidth: 80,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  approveButton: {
+    backgroundColor: '#388e3c',
+  },
+  rejectButton: {
+    backgroundColor: '#d32f2f',
+  },
+  requestButtonText: {
+    color: 'white',
+    fontWeight: 'bold',
+  },
   errorContainer: {
     padding: 20,
     alignItems: 'center',
@@ -434,11 +740,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     marginVertical: 10,
   },
-  actionButton: {
-    padding: 5,
-    borderRadius: 5,
-    backgroundColor: '#f0e6e2',
-  },
   adminRole: {
     color: '#d9534f',
     fontWeight: 'bold',
@@ -451,5 +752,4 @@ const styles = StyleSheet.create({
     color: '#5cb85c',
     fontWeight: 'bold',
   },
-
 });

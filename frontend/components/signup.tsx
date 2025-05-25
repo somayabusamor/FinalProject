@@ -25,13 +25,13 @@ const Signup = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  const handleChange = (name: keyof SignupData, value: string) => {
-    setData((prevData) => ({ ...prevData, [name]: value }));
+  const handleChange = (field: keyof SignupData, value: string) => {
+    setData((prev) => ({ ...prev, [field]: value }));
   };
 
   const handleSubmit = async () => {
     if (data.password !== data.confirmPassword) {
-      setError("Passwords do not match");
+      setError("Passwords don't match");
       return;
     }
 
@@ -41,31 +41,16 @@ const Signup = () => {
 
     try {
       const url = `http://localhost:8082/api/signup`;
-      const { data: res } = await axios.post(url, data);
-      
-      setSuccessMessage("Account created successfully!");
-      
-      // Clear form
-      setData({
-        name: "",
-        email: "",
-        password: "",
-        confirmPassword: "",
-        role: "local",
-      });
-
-      // Optionally navigate to login after 2 seconds
-      setTimeout(() => {
-        router.push('/login');
-      }, 2000);
-
-    } catch (error: any) {
-      console.error('API call failed:', error);
-      if (error.response) {
-        setError(error.response.data.message);
-      } else {
-        setError('An unexpected error occurred');
-      }
+      const response = await axios.post(url, data);
+      Alert.alert(
+        "Sign Up Successful",
+        response.data.message || "Registration successful!",
+        [{ text: 'OK', onPress: () => router.push('/login') }]
+      );
+    } catch (err: any) {
+      console.error('API call failed:', err);
+      if (err.response) setError(err.response.data.message);
+      else setError("An unexpected error occurred");
     } finally {
       setIsSubmitting(false);
     }
@@ -80,18 +65,17 @@ const Signup = () => {
         <View style={styles.container}>
           <View style={styles.header}>
             <MaterialIcons name="person-add" size={40} color="#FFD700" />
-            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.title}>Sign Up</Text>
           </View>
 
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Name"
+              placeholder="Full Name"
               value={data.name}
               onChangeText={(text) => handleChange('name', text)}
               placeholderTextColor="#8d6e63"
             />
-            
             <TextInput
               style={styles.input}
               placeholder="Email"
@@ -100,7 +84,6 @@ const Signup = () => {
               keyboardType="email-address"
               placeholderTextColor="#8d6e63"
             />
-            
             <TextInput
               style={styles.input}
               placeholder="Password"
@@ -109,7 +92,6 @@ const Signup = () => {
               secureTextEntry
               placeholderTextColor="#8d6e63"
             />
-            
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
@@ -118,19 +100,19 @@ const Signup = () => {
               secureTextEntry
               placeholderTextColor="#8d6e63"
             />
-            
+
             <View style={styles.roleContainer}>
-              <Text style={styles.roleLabel}>Account Type:</Text>
+              <Text style={styles.roleLabel}>Select Role</Text>
               <View style={styles.roleButtons}>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.roleButton, data.role === 'local' && styles.activeRole]}
                   onPress={() => handleChange('role', 'local')}
                 >
                   <Text style={[styles.roleText, data.role === 'local' && styles.activeRoleText]}>
-                    Local Resident
+                    Local User
                   </Text>
                 </TouchableOpacity>
-                <TouchableOpacity 
+                <TouchableOpacity
                   style={[styles.roleButton, data.role === 'emergency' && styles.activeRole]}
                   onPress={() => handleChange('role', 'emergency')}
                 >
@@ -149,7 +131,7 @@ const Signup = () => {
               disabled={isSubmitting}
             >
               <Text style={styles.buttonText}>
-                {isSubmitting ? "Creating Account..." : "Sign Up"}
+                {isSubmitting ? 'Signing Up...' : 'Sign Up'}
               </Text>
             </TouchableOpacity>
 
@@ -163,7 +145,7 @@ const Signup = () => {
             <View style={styles.loginLinkContainer}>
               <Text style={styles.loginText}>Already have an account?</Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.loginLink}>Log In</Text>
+                <Text style={styles.loginLink}>Login</Text>
               </TouchableOpacity>
             </View>
           </View>

@@ -8,18 +8,35 @@ const AddVillage = () => {
     const router = useRouter();
     const [name, setName] = useState("");
     const [description, setDescription] = useState("");
-    const [imageUrl, setImageUrl] = useState("");
+    const [imageUrls, setImageUrls] = useState<string[]>([]);
+    const [currentImageUrl, setCurrentImageUrl] = useState("");
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [successMessage, setSuccessMessage] = useState("");
 
+    const addImageUrl = () => {
+        if (currentImageUrl.trim() && !imageUrls.includes(currentImageUrl)) {
+            setImageUrls([...imageUrls, currentImageUrl]);
+            setCurrentImageUrl("");
+        }
+    };
+
+    const removeImageUrl = (urlToRemove: string) => {
+        setImageUrls(imageUrls.filter(url => url !== urlToRemove));
+    };
+
     const handleSubmit = async () => {
+        if (imageUrls.length === 0) {
+            Alert.alert("Error", "Please add at least one image");
+            return;
+        }
+
         setIsSubmitting(true);
         setSuccessMessage("");
         
         try {
             const response = await axios.post(
                 "http://localhost:8082/api/addVillage",
-                { name, description, imageUrl },
+                { name, description, images: imageUrls },
                 {
                     headers: {
                         "Content-Type": "application/json"
@@ -27,15 +44,11 @@ const AddVillage = () => {
                 }
             );
             
-            // Set success message
             setSuccessMessage("Village added successfully!");
-            
-            // Clear form
             setName("");
             setDescription("");
-            setImageUrl("");
+            setImageUrls([]);
 
-            // Optionally navigate back after 2 seconds
             setTimeout(() => {
                 router.back();
             }, 2000);
@@ -44,8 +57,8 @@ const AddVillage = () => {
             let errorMessage = "Failed to add village";
             
             if (axios.isAxiosError(error)) {
-                errorMessage = error.response?.data?.message || 
-                              error.response?.data?.error || 
+                errorMessage = error.response?.data?.error || 
+                              error.response?.data?.message || 
                               error.message;
             } else if (error instanceof Error) {
                 errorMessage = error.message;
@@ -83,19 +96,43 @@ const AddVillage = () => {
                     numberOfLines={4}
                 />
                 
-                <TextInput 
-                    style={styles.input}
-                    placeholder="Image URL"
-                    placeholderTextColor="#8d6e63"
-                    value={imageUrl}
-                    onChangeText={setImageUrl}
-                    keyboardType="url"
-                />
+                <View style={styles.imageInputContainer}>
+                    <TextInput 
+                        style={[styles.input, styles.imageInput]}
+                        placeholder="Image URL"
+                        placeholderTextColor="#8d6e63"
+                        value={currentImageUrl}
+                        onChangeText={setCurrentImageUrl}
+                        keyboardType="url"
+                    />
+                    <TouchableOpacity 
+                        style={styles.addButton}
+                        onPress={addImageUrl}
+                        disabled={!currentImageUrl.trim()}
+                    >
+                        <MaterialIcons name="add" size={24} color="#FFD700" />
+                    </TouchableOpacity>
+                </View>
+
+                {imageUrls.length > 0 && (
+                    <View style={styles.imageList}>
+                        {imageUrls.map((url, index) => (
+                            <View key={index} style={styles.imageItem}>
+                                <Text style={styles.imageUrl} numberOfLines={1}>
+                                    {url}
+                                </Text>
+                                <TouchableOpacity onPress={() => removeImageUrl(url)}>
+                                    <MaterialIcons name="close" size={20} color="#f44336" />
+                                </TouchableOpacity>
+                            </View>
+                        ))}
+                    </View>
+                )}
 
                 <TouchableOpacity 
                     style={styles.button} 
                     onPress={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || imageUrls.length === 0}
                 >
                     <Text style={styles.buttonText}>
                         {isSubmitting ? "Adding..." : "Add Village"}
@@ -189,6 +226,40 @@ const styles = StyleSheet.create({
         fontSize: 16,
         fontWeight: 'bold',
         marginLeft: 8,
+    },
+     imageInputContainer: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        marginBottom: 20,
+    },
+    imageInput: {
+        flex: 1,
+        marginRight: 10,
+    },
+    addButton: {
+        backgroundColor: '#6d4c41',
+        width: 40,
+        height: 40,
+        borderRadius: 20,
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    imageList: {
+        marginBottom: 20,
+    },
+    imageItem: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        padding: 10,
+        backgroundColor: '#f5f5f5',
+        borderRadius: 8,
+        marginBottom: 8,
+    },
+    imageUrl: {
+        flex: 1,
+        color: '#5d4037',
+        marginRight: 10,
     },
 });
 

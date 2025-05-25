@@ -2,6 +2,8 @@ const express = require("express");
 const router = express.Router();
 const { User, validateUser } = require("../models/User");
 const bcrypt = require("bcrypt");
+const jwt = require("jsonwebtoken");
+
 router.post("/signup", async (req, res) => {
   try {
     const { error } = validateUser(req.body);
@@ -31,35 +33,27 @@ router.post("/signup", async (req, res) => {
     res.status(500).send({ message: "Internal Server Error" });
   }
 });
-
-
-router.post("/", async (req, res) => {
-  const { name, email, password, role } = req.body;
-
+router.post("/login", async (req, res) => {
   try {
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ message: "User already exists" });
-    }
+    const { email, password } = req.body;
 
-    // Hash the password
-    const hashedPassword = await bcrypt.hash(password, 10);
+    const user = await User.findOne({ email });
+    if (!user) return res.status(401).send({ message: "Invalid credentials" });
 
-    const newUser = new User({
-      name,
-      email,
-      password: hashedPassword,
-      role,
-    });
+    const validPassword = await bcrypt.compare(password, user.password);
+    if (!validPassword)
+      return res.status(401).send({ message: "Invalid credentials" });
 
-    await newUser.save();
-    res.status(201).json({ message: "User created successfully" });
-  } catch (err) {
-    console.error(err);
-    res.status(500).json({ message: "Internal server error" });
+    // (Optional: create JWT token here if you use one)
+    res.status(200).send({ message: "Login successful", user });
+  } catch (error) {
+    console.error("Login error:", error);
+    res.status(500).send({ message: "Internal Server Error" });
   }
 });
-router.post('/login', async (req, res) => {
+
+/*
+router.post("/login", async (req, res) => {
   const { email, password } = req.body;
 
   try {
@@ -73,9 +67,16 @@ router.post('/login', async (req, res) => {
       return res.status(400).json({ message: "البريد أو كلمة المرور غير صحيحة" });
     }
 
-    // إذا البيانات صحيحة، نرجّع بيانات المستخدم ومنها الدور
+    // Generate JWT token on login
+    const token = jwt.sign(
+      { _id: existingUser._id, role: existingUser.role },
+      process.env.JWTPRIVATEKEY,
+      { expiresIn: "1h" }
+    );
+
     return res.status(200).json({
       message: "تم تسجيل الدخول بنجاح",
+      token,
       user: {
         name: existingUser.name,
         email: existingUser.email,
@@ -86,80 +87,6 @@ router.post('/login', async (req, res) => {
     console.error("خطأ في تسجيل الدخول:", err);
     return res.status(500).json({ message: "خطأ في الخادم" });
   }
-});
-
-
-module.exports = router;
-/**const router = require("express").Router();
-const { User, validate } = require("../models/user");
-const bcrypt = require("bcrypt");
-
-router.post("/", async (req, res) => {
-  try {
-    const { error } = validate(req.body);
-    if (error) {
-      console.log("Validation error:", error.details[0].message);
-      return res.status(400).send({ message: error.details[0].message });
-    }
-
-    // Check if password matches confirmPassword
-    if (req.body.password !== req.body.confirmPassword) {
-      return res.status(400).send({ message: "Passwords do not match" });
-    }
-
-    const user = new User({
-      firstName: req.body.firstName,
-      lastName: req.body.lastName,
-      email: req.body.email,
-      password: req.body.password,
-      isAdmin: false,
-      changeRole: false, // Set changeRole to false by default
-      userType: req.body.userType,
-    });
-
-    await user.save();
-
-    const token = user.generateAuthToken();
-    res.status(200).send({
-      token,
-      isAdmin: user.isAdmin,
-      userType: user.userType,
-      changeRole: user.changeRole,
-    });
-
-  } catch (error) {
-    console.log("Server error:", error);
-    res.status(500).send({ message: "Internal Server Error" });
-  }
-});
-
-router.get("/all", async (req, res) => {
-  try {
-    let users = await User.find({});
-    users = users.map(user => {
-      user = user.toObject();
-      delete user.password;
-      return user;
-    });
-    res.json(users);
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Server error' });
-  }
-});
-
-router.get('/:id', async (req, res) => {
-  try {
-    const user = await User.findById(req.params.id).select('-password'); // Exclude password
-    if (!user) {
-      return res.status(404).send({ message: 'User not found' });
-    }
-    res.status(200).send(user);
-  } catch (error) {
-    console.error('Error fetching user details:', error);
-    res.status(500).send({ message: 'Internal Server Error' });
-  }
-});
+}); */
 
 module.exports = router;
- */
