@@ -3,8 +3,6 @@ import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert,
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLanguage } from '@/frontend/context/LanguageProvider';
-import { useTranslations } from '@/frontend/constants/locales';
 
 type SignupData = {
   name: string;
@@ -16,9 +14,6 @@ type SignupData = {
 
 const Signup = () => {
   const router = useRouter();
-  const { language } = useLanguage();
-  const t = useTranslations();
-
   const [data, setData] = useState<SignupData>({
     name: "",
     email: "",
@@ -30,8 +25,6 @@ const Signup = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  const handleChange = (field: keyof SignupData, value: string) => {
-    setData((prev) => ({ ...prev, [field]: value }));
   const handleChange = (field: keyof SignupData, value: string) => {
     setData((prev) => ({ ...prev, [field]: value }));
   };
@@ -85,7 +78,7 @@ const Signup = () => {
             />
             <TextInput
               style={styles.input}
-              placeholder={t.auth.signup.email}
+              placeholder="Email"
               value={data.email}
               onChangeText={(text) => handleChange('email', text)}
               keyboardType="email-address"
@@ -93,7 +86,7 @@ const Signup = () => {
             />
             <TextInput
               style={styles.input}
-              placeholder={t.auth.signup.password}
+              placeholder="Password"
               value={data.password}
               onChangeText={(text) => handleChange('password', text)}
               secureTextEntry
@@ -101,18 +94,16 @@ const Signup = () => {
             />
             <TextInput
               style={styles.input}
-              placeholder={t.auth.signup.confirmPassword}
+              placeholder="Confirm Password"
               value={data.confirmPassword}
               onChangeText={(text) => handleChange('confirmPassword', text)}
               secureTextEntry
               placeholderTextColor="#8d6e63"
             />
 
-
             <View style={styles.roleContainer}>
               <Text style={styles.roleLabel}>Select Role</Text>
               <View style={styles.roleButtons}>
-                <TouchableOpacity
                 <TouchableOpacity
                   style={[styles.roleButton, data.role === 'local' && styles.activeRole]}
                   onPress={() => handleChange('role', 'local')}
@@ -122,12 +113,11 @@ const Signup = () => {
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                <TouchableOpacity
                   style={[styles.roleButton, data.role === 'emergency' && styles.activeRole]}
                   onPress={() => handleChange('role', 'emergency')}
                 >
                   <Text style={[styles.roleText, data.role === 'emergency' && styles.activeRoleText]}>
-                    {t.auth.signup.roleEmergency}
+                    Emergency Responder
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -153,7 +143,7 @@ const Signup = () => {
             ) : null}
 
             <View style={styles.loginLinkContainer}>
-              <Text style={styles.loginText}>{t.auth.signup.loginPrompt}</Text>
+              <Text style={styles.loginText}>Already have an account?</Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
                 <Text style={styles.loginLink}>Login</Text>
               </TouchableOpacity>

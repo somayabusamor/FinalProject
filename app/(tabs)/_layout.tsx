@@ -1,17 +1,27 @@
 import { Tabs } from 'expo-router';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Platform } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { IconSymbol } from '@/frontend/components/ui/IconSymbol';
 import TabBarBackground from '@/frontend/components/ui/TabBarBackground';
 import { HapticTab } from '@/frontend/components/HapticTab';
 import { useColorScheme } from '@/frontend/hooks/useColorScheme';
 import { Colors } from '@/frontend/constants/Colors';
-import { I18nManager } from 'react-native';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const [role, setRole] = useState<string | null>(null);
+
   useEffect(() => {
-    I18nManager.forceRTL(I18nManager.isRTL);
+    const fetchRole = async () => {
+      try {
+        const storedRole = await AsyncStorage.getItem('userRole');
+        setRole(storedRole);
+      } catch (error) {
+        console.error('Error fetching role from AsyncStorage:', error);
+      }
+    };
+    fetchRole();
   }, []);
 
   if (!role) {
@@ -47,7 +57,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="homepage"
         options={{
-          title: 'Home',
+          title: 'HomePage',
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
         }}
       />
@@ -59,6 +69,7 @@ export default function TabLayout() {
           tabBarIcon: ({ color }) => <IconSymbol size={28} name="envelope.fill" color={color} />,
         }}
       />
+      
       <Tabs.Screen
         name="AboutUs"
         options={{

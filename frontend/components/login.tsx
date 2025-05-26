@@ -4,88 +4,90 @@ import { useRouter } from 'expo-router';
 import axios, { AxiosError } from 'axios';
 import { useTranslations } from '@/frontend/constants/locales';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useLanguage } from '@/frontend/context/LanguageProvider';
-import type { LocaleKeys } from '@/frontend/constants/locales/types'; 
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-import AsyncStorage from '@react-native-async-storage/async-storage';
+// Define LocaleKeys type if not exported from locales
+type LocaleKeys = 'en' | 'ar' | 'he';
+
 interface ErrorResponse {
   message?: string;
   error?: string;
-  [key: string]: any; // For any additional properties
+  [key: string]: any;
 }
+
 export default function Login() {
   const router = useRouter();
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const { language, changeLanguage } = useLanguage(); // عدل هذا السطر
-  const t = useTranslations();
   const [language, setLanguage] = useState<LocaleKeys>('en');
-  const [loading, setLoading] = useState(false); // Add loading state
-  const [error, setError] = useState(''); // Add error state
-  const t = useTranslations(language);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   
+  // Initialize translations without language parameter if not supported
+  const t = useTranslations();
 
-const handleLogin = async () => {
-  setLoading(true);
-  setError('');
-  try {
-    // DEBUG: Log the exact credentials being sent
-    console.log('Attempting login with:', { email, password });
+  const handleLogin = async () => {
+    setLoading(true);
+    setError('');
+    try {
+      console.log('Attempting login with:', { email, password });
 
-    const response = await axios.post('http://localhost:8082/api/auth/login', {
-      email: email.trim(), // Trim whitespace
-      password: password.trim() // Trim whitespace
-    });
+      const response = await axios.post('http://localhost:8082/api/auth/login', {
+        email: email.trim(),
+        password: password.trim()
+      });
 
-    // DEBUG: Full response
-    console.log('Login response:', response.data);
+      console.log('Login response:', response.data);
 
-    // Verify token exists
-    if (!response.data.token) {
-      throw new Error('No token received');
+      if (!response.data.token) {
+        throw new Error('No token received');
+      }
+
+      // Store auth data
+      await AsyncStorage.multiSet([
+        ['user', JSON.stringify(response.data.user)],
+        ['token', response.data.token],
+        ['userRole', response.data.user.role]
+      ]);
+
+      const storedToken = await AsyncStorage.getItem('token');
+      console.log('Stored token:', storedToken);
+
+      // Handle role safely
+      const userRole = response.data.user?.role?.toLowerCase();
+      if (!userRole) {
+        throw new Error('No user role received');
+      }
+
+      switch(userRole) {
+        case 'local':
+          router.replace('/(tabs)/local');
+          break;
+        case 'emergency':
+          router.replace('/(tabs)/homepage');
+          break;
+        case 'admin':
+          router.replace('/admin');
+          break;
+        default:
+          router.replace('/');
+      }
+
+    } catch (error) {
+      const err = error as AxiosError;
+      console.error('Login error:', {
+        status: err.response?.status,
+        data: err.response?.data,
+        message: err.message
+      });
+
+      const errorData = err.response?.data as ErrorResponse;
+      setError(errorData?.message || 'Login failed. Please try again.');
+    } finally {
+      setLoading(false);
     }
+  };
 
-    // Store auth data
-    await AsyncStorage.multiSet([
-      ['user', JSON.stringify(response.data.user)],
-      ['token', response.data.token],
-      ['userRole', response.data.user.role]
-    ]);
-
-    // DEBUG: Verify storage
-    const storedToken = await AsyncStorage.getItem('token');
-    console.log('Stored token:', storedToken);
-
-    // Redirect based on role
-    switch(response.data.user.role.toLowerCase()) {
-      case 'local':
-        router.replace('/(tabs)/local');
-        break;
-      case 'emergency':
-        router.replace('/(tabs)/homepage');
-        break;
-      case 'admin':
-        router.replace('/admin');
-        break;
-      default:
-        router.replace('/');
-    }
-
-  } catch (error) {
-    const err = error as AxiosError;
-    console.error('Login error:', {
-      status: err.response?.status,
-      data: err.response?.data,
-      message: err.message
-    });
-
-    const errorData = err.response?.data as ErrorResponse;
-    setError(errorData?.message || 'Login failed. Please try again.');
-  } finally {
-    setLoading(false);
-  }
-};
   const changeLanguage = (lang: LocaleKeys) => {
     setLanguage(lang);
   };
@@ -93,11 +95,22 @@ const handleLogin = async () => {
   return (
     <View style={[
       styles.container,
-      { direction: language === 'ar' || language === 'he' ? 'rtl' : 'ltr',
-        alignItems: language === 'ar' || language === 'he' ? 'flex-end' : 'flex-start' 
-
-       }
+      { direction: language === 'ar' || language === 'he' ? 'rtl' : 'ltr' }
     ]}>
+      {/* Language Selector */}
+      <View style={styles.languageSelector}>
+        {(['en', 'ar', 'he'] as LocaleKeys[]).map((lang) => (
+          <TouchableOpacity
+            key={lang}
+            onPress={() => changeLanguage(lang)}
+            style={[styles.languageButton, language === lang && styles.activeLanguage]}
+          >
+            <Text style={styles.languageText}>
+              {lang === 'en' ? 'EN' : lang === 'ar' ? 'عربي' : 'עברית'}
+            </Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       <View style={styles.header}>
         <MaterialIcons name="login" size={40} color="#FFD700" />
