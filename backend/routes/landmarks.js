@@ -6,10 +6,12 @@ const Landmark = require('../models/Landmark');
 // Get all landmarks
 router.get('/', async (req, res) => {
   try {
-    const landmarks = await Landmark.find();
-    res.json(landmarks);
+    // Find only verified landmarks
+    const verifiedLandmarks = await Landmark.find({ verified: true });
+res.json(verifiedLandmarks);
+
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ error: 'Failed to fetch landmarks' });
   }
 });
 

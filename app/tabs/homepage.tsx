@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from "react";
 import EmergencyPage from "../EmergencyPage";
-import WorkerPage from "./local";
+import { router } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HomePage: React.FC = () => {
@@ -10,21 +10,29 @@ const HomePage: React.FC = () => {
     const getRole = async () => {
       const storedRole = await AsyncStorage.getItem("userRole");
       console.log("Stored role:", storedRole);
-      setRole(storedRole);
+      setRole(storedRole ? storedRole.trim().toLowerCase() : null);
     };
     getRole();
   }, []);
+
+  useEffect(() => {
+    if (!role) return; // wait for role to load
+    if (role !== "emergency" && role !== "admin") {
+      // redirect to /local if not emergency or admin
+      router.push('/local');
+    }
+  }, [role]);
 
   if (!role) {
     return <p>Loading...</p>;
   }
 
-  return (
-    <>
-      {role === "emergency" && <EmergencyPage />}
-      {role === "local" && <WorkerPage />}
-    </>
-  );
+  if (role === "emergency") {
+    return <EmergencyPage />;
+  }
+
+  // Optionally, show loading or null while redirecting
+  return <p>Redirecting...</p>;
 };
 
 export default HomePage;
