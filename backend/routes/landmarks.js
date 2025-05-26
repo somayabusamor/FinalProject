@@ -8,8 +8,10 @@ const mongoose = require('mongoose');
 // GET all landmarks
 router.get('/', async (req, res) => {
   try {
-    const landmarks = await Landmark.find().sort({ createdAt: -1 });
-    res.status(200).json(landmarks);
+    // Find only verified landmarks
+    const verifiedLandmarks = await Landmark.find({ verified: true }).sort({ createdAt: -1 });
+res.status(200).json(verifiedLandmarks);
+
   } catch (error) {
     res.status(500).json({ 
       message: 'Error fetching landmarks', 

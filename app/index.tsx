@@ -93,7 +93,15 @@ export default function MainIndex() {
       </View>
     );
   }
-
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker
+        .register("/service-worker.js")
+        .then((reg) => console.log("Service Worker registered", reg))
+        .catch((err) => console.error("Service Worker registration failed", err));
+    });
+  }
+  
   if (error) {
     return (
       <View style={[styles.container, styles.errorContainer]}>
@@ -106,6 +114,7 @@ export default function MainIndex() {
         </TouchableOpacity>
       </View>
     );
+
   }
 
   return (
