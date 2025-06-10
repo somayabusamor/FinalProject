@@ -132,12 +132,12 @@ app.post("/api/auth/login", async (req, res) => {
     const validPassword = await bcrypt.compare(password, user.password);
     if (!validPassword) return res.status(401).send({ message: "Invalid password" });
 
-    // Include isSuper in the token
+    // Include isSuperlocal in the token
     const token = jwt.sign(
       {
         userId: user._id,
         role: user.role,
-        isSuper: user.isSuper  // <-- This is critical
+        isSuperlocal: user.isSuperlocal  // <-- This is critical
       },
       process.env.JWTPRIVATEKEY,
       { expiresIn: '1h' }
@@ -150,7 +150,7 @@ app.post("/api/auth/login", async (req, res) => {
         _id: user._id,
         email: user.email,
         role: user.role,
-        isSuper: user.isSuper  // Also send to frontend
+        isSuperlocal: user.isSuperlocal  // Also send to frontend
       }
     });
   } catch (error) {
@@ -176,7 +176,7 @@ app.get('/api/fix-user', async (req, res) => {
       email: "test@example.com",
       password: hash,
       role: "local",
-      isSuper: false,
+      isSuperlocal: false,
       createdAt: new Date(),
       updatedAt: new Date()
     });

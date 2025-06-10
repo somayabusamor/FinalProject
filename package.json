@@ -33,6 +33,7 @@
     "emailjs-com": "^3.2.0",
     "expo-blur": "~14.0.1",
     "expo-constants": "~17.0.3",
+    "expo-dev-client": "~5.1.8",
     "expo-font": "~13.0.1",
     "expo-haptics": "~14.0.0",
     "expo-image": "^2.1.7",
@@ -77,13 +78,13 @@
     "react-native-webview": "^13.12.5",
     "react-plotly.js": "^2.6.0",
     "react-router-dom": "^6.3.0",
-    "victory": "^37.3.5",
-    "expo-dev-client": "~5.1.8"
+    "victory": "^37.3.5"
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
     "@types/jest": "^29.5.12",
     "@types/leaflet": "^1.9.15",
+    "@types/lodash.throttle": "^4.1.9",
     "@types/plotly.js": "^3.0.0",
     "@types/plotly.js-dist-min": "^2.3.4",
     "@types/react": "~18.3.12",

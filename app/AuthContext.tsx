@@ -8,7 +8,7 @@ interface User {
   _id: string;
   email: string;
   role: string;
-  isSuper?: boolean;
+  isSuperlocal?: boolean;
 }
 
 interface AuthContextType {

@@ -1,5 +1,7 @@
 import React, { useState } from 'react';
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, ScrollView, Alert, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet,
+ScrollView, Alert, KeyboardAvoidingView, Platform } from
+'react-native';
 import { useRouter } from 'expo-router';
 import axios from 'axios';
 import { MaterialIcons } from '@expo/vector-icons';
@@ -25,13 +27,13 @@ const Signup = () => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [successMessage, setSuccessMessage] = useState("");
 
-  const handleChange = (field: keyof SignupData, value: string) => {
-    setData((prev) => ({ ...prev, [field]: value }));
+  const handleChange = (name: keyof SignupData, value: string) => {
+    setData((prevData) => ({ ...prevData, [name]: value }));
   };
 
   const handleSubmit = async () => {
     if (data.password !== data.confirmPassword) {
-      setError("Passwords don't match");
+      setError("Passwords do not match");
       return;
     }
 
@@ -41,16 +43,31 @@ const Signup = () => {
 
     try {
       const url = `http://localhost:8082/api/signup`;
-      const response = await axios.post(url, data);
-      Alert.alert(
-        "Sign Up Successful",
-        response.data.message || "Registration successful!",
-        [{ text: 'OK', onPress: () => router.push('/login') }]
-      );
-    } catch (err: any) {
-      console.error('API call failed:', err);
-      if (err.response) setError(err.response.data.message);
-      else setError("An unexpected error occurred");
+      const { data: res } = await axios.post(url, data);
+
+      setSuccessMessage("Account created successfully!");
+
+      // Clear form
+      setData({
+        name: "",
+        email: "",
+        password: "",
+        confirmPassword: "",
+        role: "local",
+      });
+
+      // Optionally navigate to login after 2 seconds
+      setTimeout(() => {
+        router.push('/login');
+      }, 2000);
+
+    } catch (error: any) {
+      console.error('API call failed:', error);
+      if (error.response) {
+        setError(error.response.data.message);
+      } else {
+        setError('An unexpected error occurred');
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -65,17 +82,18 @@ const Signup = () => {
         <View style={styles.container}>
           <View style={styles.header}>
             <MaterialIcons name="person-add" size={40} color="#FFD700" />
-            <Text style={styles.title}>Sign Up</Text>
+            <Text style={styles.title}>Create Account</Text>
           </View>
 
           <View style={styles.formContainer}>
             <TextInput
               style={styles.input}
-              placeholder="Full Name"
+              placeholder="Name"
               value={data.name}
               onChangeText={(text) => handleChange('name', text)}
               placeholderTextColor="#8d6e63"
             />
+
             <TextInput
               style={styles.input}
               placeholder="Email"
@@ -84,6 +102,7 @@ const Signup = () => {
               keyboardType="email-address"
               placeholderTextColor="#8d6e63"
             />
+
             <TextInput
               style={styles.input}
               placeholder="Password"
@@ -92,6 +111,7 @@ const Signup = () => {
               secureTextEntry
               placeholderTextColor="#8d6e63"
             />
+
             <TextInput
               style={styles.input}
               placeholder="Confirm Password"
@@ -102,21 +122,25 @@ const Signup = () => {
             />
 
             <View style={styles.roleContainer}>
-              <Text style={styles.roleLabel}>Select Role</Text>
+              <Text style={styles.roleLabel}>Account Type:</Text>
               <View style={styles.roleButtons}>
                 <TouchableOpacity
-                  style={[styles.roleButton, data.role === 'local' && styles.activeRole]}
+                  style={[styles.roleButton, data.role === 'local' &&
+styles.activeRole]}
                   onPress={() => handleChange('role', 'local')}
                 >
-                  <Text style={[styles.roleText, data.role === 'local' && styles.activeRoleText]}>
-                    Local User
+                  <Text style={[styles.roleText, data.role === 'local'
+&& styles.activeRoleText]}>
+                    Local Resident
                   </Text>
                 </TouchableOpacity>
                 <TouchableOpacity
-                  style={[styles.roleButton, data.role === 'emergency' && styles.activeRole]}
+                  style={[styles.roleButton, data.role === 'emergency'
+&& styles.activeRole]}
                   onPress={() => handleChange('role', 'emergency')}
                 >
-                  <Text style={[styles.roleText, data.role === 'emergency' && styles.activeRoleText]}>
+                  <Text style={[styles.roleText, data.role ===
+'emergency' && styles.activeRoleText]}>
                     Emergency Responder
                   </Text>
                 </TouchableOpacity>
@@ -125,13 +149,13 @@ const Signup = () => {
 
             {error ? <Text style={styles.errorText}>{error}</Text> : null}
 
-            <TouchableOpacity 
-              style={styles.button} 
+            <TouchableOpacity
+              style={styles.button}
               onPress={handleSubmit}
               disabled={isSubmitting}
             >
               <Text style={styles.buttonText}>
-                {isSubmitting ? 'Signing Up...' : 'Sign Up'}
+                {isSubmitting ? "Creating Account..." : "Sign Up"}
               </Text>
             </TouchableOpacity>
 
@@ -145,7 +169,7 @@ const Signup = () => {
             <View style={styles.loginLinkContainer}>
               <Text style={styles.loginText}>Already have an account?</Text>
               <TouchableOpacity onPress={() => router.push('/login')}>
-                <Text style={styles.loginLink}>Login</Text>
+                <Text style={styles.loginLink}>Log In</Text>
               </TouchableOpacity>
             </View>
           </View>

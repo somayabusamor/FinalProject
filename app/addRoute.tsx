@@ -564,8 +564,8 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
 
     setVoteSuccess(
       currentVote 
-        ? `Changed vote to ${voteType} (Weight: ${user.isSuper ? '2' : '1'})`
-        : `Vote recorded! (Weight: ${user.isSuper ? '2' : '1'})`
+        ? `Changed vote to ${voteType} (Weight: ${user.isSuperlocal ? '2' : '1'})`
+        : `Vote recorded! (Weight: ${user.isSuperlocal ? '2' : '1'})`
     );
 
   } catch (error) {

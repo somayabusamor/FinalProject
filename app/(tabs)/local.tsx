@@ -26,7 +26,7 @@ interface UserData {
   name: string;
   email: string;
   points: number;
-  isSuperLocal: boolean;
+  isSuperlocalLocal: boolean;
 }
 export default function LocalPage() {
   const { language } = useLanguage();
@@ -39,7 +39,7 @@ export default function LocalPage() {
     name: '',
     email: '',
     points: 0,
-    isSuperLocal: false
+    isSuperlocalLocal: false
   });
   const [requestSent, setRequestSent] = useState(false);
   const [superLocalRequests, setSuperLocalRequests] = useState<SuperLocalRequest[]>([]);
@@ -59,7 +59,7 @@ export default function LocalPage() {
                   name: user.name || user.email.split('@')[0],
                   email: user.email,
                   points: 0,
-                  isSuperLocal: user.isSuper || false
+                  isSuperlocalLocal: user.isSuperlocal || false
                 });
               }
             } catch (error) {
@@ -93,7 +93,7 @@ export default function LocalPage() {
             name: user.name || user.email.split('@')[0],
             email: user.email,
             points: 0,
-            isSuperLocal: user.isSuper || false
+            isSuperlocalLocal: user.isSuperlocal || false
           });
           
           // Check requests
@@ -116,7 +116,7 @@ export default function LocalPage() {
             name: user.name || user.email.split('@')[0],
             email: user.email,
             points: 0,
-            isSuperLocal: user.isSuper || false
+            isSuperlocalLocal: user.isSuperlocal || false
           });
         }
       }
@@ -222,7 +222,7 @@ export default function LocalPage() {
             <Text style={styles.profileEmail}>{userData.email}</Text>
             <View style={styles.pointsContainer}>
             </View>
-            {userData.isSuperLocal ? (
+            {userData.isSuperlocalLocal ? (
               <View style={styles.badge}>
                 <Text style={styles.badgeText}>Super Local</Text>
               </View>
@@ -234,7 +234,7 @@ export default function LocalPage() {
 
         {/* Status Card - Moved under profile */}
         <View style={styles.statusCard}>
-          {userData.isSuperLocal ? (
+          {userData.isSuperlocalLocal ? (
             <>
               <View style={styles.statusHeader}>
                 <MaterialIcons name="verified" size={24} color="#4caf50" />
@@ -286,7 +286,7 @@ export default function LocalPage() {
         </View>
 
         {/* Keep the rest of your existing components */}
-        {!userData.isSuperLocal && !requestSent && (
+        {!userData.isSuperlocalLocal && !requestSent && (
           <TouchableOpacity 
             style={[styles.actionButton, styles.superLocalButton]}
             onPress={handleRequestSuperLocal}
@@ -306,16 +306,6 @@ export default function LocalPage() {
         {/* Main Content */}
         <View style={styles.content}>
           {/* Card 2 - Quick Actions */}
-          <View style={styles.card}>
-            <View style={styles.cardHeader}>
-              <MaterialIcons name="bolt" size={24} color="#6d4c41" />
-              <Text style={styles.cardTitle}>{t.localPage.quick_actions}</Text>
-            </View>
-            <TouchableOpacity style={styles.goldButton}>
-              <MaterialIcons name="report" size={20} color="#6d4c41" />
-              <Text style={styles.goldButtonText}>{t.localPage.report_issue}</Text>
-            </TouchableOpacity>
-          </View>
         </View>
       </ScrollView>
     </View>

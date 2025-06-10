@@ -1,17 +1,32 @@
 const express = require('express');
 const router = express.Router();
 const Landmark = require('../models/Landmark');
-const User = require('../models/User');
+//const User = require('../models/User');
 const auth = require('../middleware/auth');
 const mongoose = require('mongoose');
+const { User } = require('../models/User'); // Destructure the User model
 
-// GET all landmarks
+// Enhanced user weight calculation
+const calculateUserWeight = (user) => {
+  let weight = 1; // Base weight
+  
+  // Super user bonus
+  if (user.isSuperlocal) weight += 1;
+  
+  // Reputation bonus (if you implement this later)
+  if (user.reputationScore) weight += Math.min(2, user.reputationScore / 100);
+  
+  // Activity bonus - reward active users
+  if (user.landmarksAdded > 5) weight += 0.5;
+  
+  return Math.min(5, weight); // Cap at 5 to prevent abuse
+};
+
+// GET all landmarks (unchanged)
 router.get('/', async (req, res) => {
   try {
-    // Find only verified landmarks
-    const verifiedLandmarks = await Landmark.find({ verified: true }).sort({ createdAt: -1 });
-res.status(200).json(verifiedLandmarks);
-
+    const landmarks = await Landmark.find().sort({ createdAt: -1 });
+    res.status(200).json(landmarks);
   } catch (error) {
     res.status(500).json({ 
       message: 'Error fetching landmarks', 
@@ -20,7 +35,7 @@ res.status(200).json(verifiedLandmarks);
   }
 });
 
-// POST create new landmark
+// POST create new landmark (unchanged)
 router.post('/', auth, async (req, res) => {
   try {
     const { title, lat, lon, color, imageUrl } = req.body;
@@ -33,7 +48,7 @@ router.post('/', auth, async (req, res) => {
       imageUrl: imageUrl || '',
       verified: false,
       votes: [],
-      createdBy: req.user._id // Ensure this is included
+      createdBy: req.user._id
     });
 
     const savedLandmark = await landmark.save();
@@ -45,89 +60,167 @@ router.post('/', auth, async (req, res) => {
     });
   }
 });
+/* 
 
-// PUT vote on landmark
 router.put('/:id/vote', auth, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { vote } = req.body;
-    const landmark = await Landmark.findById(req.params.id);
     
-    if (!landmark) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Landmark not found' 
-      });
-    }
-
+    // Validate input
     if (!['yes', 'no'].includes(vote)) {
-      return res.status(400).json({ 
-        success: false,
-        message: 'Invalid vote type' 
-      });
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Invalid vote type' });
     }
 
-    const user = req.user;
-    const existingVoteIndex = landmark.votes.findIndex(v => 
-      v.userId.toString() === user._id.toString()
+    // Get user with proper weight calculation
+    const user = await User.findById(req.user._id).session(session);
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Get the proper weight using the user's method
+    const weight = user.getVoteWeight();
+    
+    // Get landmark
+    const landmark = await Landmark.findById(req.params.id).session(session);
+    if (!landmark) {
+      await session.abortTransaction();
+      return res.status(404).json({ error: 'Landmark not found' });
+    }
+
+    // Check for existing vote
+    const existingVoteIndex = landmark.votes.findIndex(
+      v => v.userId.toString() === user._id.toString()
     );
 
-    // If user already voted, update their vote
-    if (existingVoteIndex !== -1) {
-      landmark.votes[existingVoteIndex] = {
-        userId: user._id,
-        vote,
-        weight: user.isSuper ? 2 : 1
-      };
-    } 
-    // Otherwise add new vote
-    else {
-      landmark.votes.push({
-        userId: user._id,
-        vote,
-        weight: user.isSuper ? 2 : 1
-      });
+    // Create vote payload with the calculated weight
+    const voteData = {
+      userId: user._id,
+      vote,
+      weight,
+      timestamp: new Date()
+    };
+
+    // Update or add vote
+    if (existingVoteIndex >= 0) {
+      landmark.votes[existingVoteIndex] = voteData;
+    } else {
+      landmark.votes.push(voteData);
     }
 
     // Recalculate verification status
-    const { totalWeight, yesWeight } = landmark.votes.reduce((acc, v) => {
-      const weight = v.weight || 1;
-      return {
-        totalWeight: acc.totalWeight + weight,
-        yesWeight: v.vote === 'yes' ? acc.yesWeight + weight : acc.yesWeight
-      };
-    }, { totalWeight: 0, yesWeight: 0 });
-
-    landmark.verified = totalWeight >= 5 && (yesWeight / totalWeight) >= 0.8;
-
-    const updatedLandmark = await landmark.save();
+    landmark.updateVerificationStatus();
     
-    res.status(200).json({
+    await landmark.save({ session });
+    await session.commitTransaction();
+
+    res.json({
       success: true,
-      data: {
-        ...updatedLandmark.toObject(),
-        calculatedWeights: { totalWeight, yesWeight }
-      },
-      message: existingVoteIndex !== -1 
-        ? 'Vote updated successfully' 
-        : 'Vote recorded successfully'
+      data: landmark,
+      message: `Vote recorded with weight ${weight}`
     });
 
   } catch (error) {
-    console.error("Voting error:", error);
+    await session.abortTransaction();
+    console.error('Vote processing error:', error);
     res.status(500).json({ 
-      success: false,
-      message: "Server error",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+      error: 'Failed to process vote',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  } finally {
+    session.endSession();
   }
 });
+*/
+// routes/landmarks.js
+router.put('/:id/vote', auth, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
-// DELETE a landmark
+  try {
+    const { vote } = req.body;
+    
+    // Validate input
+    if (!['yes', 'no'].includes(vote)) {
+      await session.abortTransaction();
+      return res.status(400).json({ error: 'Invalid vote type' });
+    }
+
+    // Get user with proper fields
+    const user = await User.findById(req.user._id)
+      .select('isSuperlocal verifiedLandmarksAdded reputationScore')
+      .session(session);
+    
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    // Calculate weight
+    let weight = 1.0;
+    if (user.isSuperlocal) {
+      weight = 4.0;
+    } else if (user.verifiedLandmarksAdded > 0) {
+      weight = 2.0;
+    } else if (user.reputationScore >= 70) {
+      weight = 2.0;
+    }
+
+    // Get and lock landmark
+    const landmark = await Landmark.findById(req.params.id).session(session);
+    if (!landmark) {
+      await session.abortTransaction();
+      return res.status(404).json({ error: 'Landmark not found' });
+    }
+
+    // Update or add vote
+    const voteIndex = landmark.votes.findIndex(v => v.userId.toString() === user._id.toString());
+    const voteData = {
+      userId: user._id,
+      vote,
+      weight,
+      timestamp: new Date()
+    };
+
+    if (voteIndex >= 0) {
+      landmark.votes[voteIndex] = voteData;
+    } else {
+      landmark.votes.push(voteData);
+    }
+
+    // Update verification status (this will handle creator updates)
+    await landmark.updateVerificationStatus();
+    await landmark.save({ session });
+    
+    await session.commitTransaction();
+
+    res.json({
+      success: true,
+      data: landmark,
+      message: `Vote recorded with weight ${weight}x`,
+      userWeight: weight
+    });
+
+  } catch (error) {
+    await session.abortTransaction();
+    console.error('Vote processing error:', error);
+    res.status(500).json({ 
+      error: 'Failed to process vote',
+      details: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  } finally {
+    session.endSession();
+  }
+});
+// DELETE endpoint (unchanged)
 router.delete('/:id', auth, async (req, res) => {
   try {
     const landmark = await Landmark.findById(req.params.id);
     
-    // Check if landmark exists
     if (!landmark) {
       return res.status(404).json({ 
         success: false,
@@ -135,14 +228,10 @@ router.delete('/:id', auth, async (req, res) => {
       });
     }
 
-    // Check if user is creator or admin
-    if (
-      !landmark.createdBy.equals(req.user._id) && 
-      req.user.role !== 'admin'
-    ) {
+    if (!landmark.createdBy.equals(req.user._id) && req.user.role !== 'admin') {
       return res.status(403).json({ 
         success: false,
-        message: 'Unauthorized: You can only delete your own landmarks unless you are an admin'
+        message: 'Unauthorized' 
       });
     }
 
@@ -155,6 +244,43 @@ router.delete('/:id', auth, async (req, res) => {
     res.status(500).json({ 
       success: false,
       message: 'Error deleting landmark',
+      error: error.message 
+    });
+  }
+});
+
+// New endpoint to get voting analytics
+router.get('/:id/analytics', auth, async (req, res) => {
+  try {
+    const landmark = await Landmark.findById(req.params.id);
+    
+    if (!landmark) {
+      return res.status(404).json({ 
+        success: false,
+        message: 'Landmark not found' 
+      });
+    }
+
+    // Calculate voter distribution
+    const voterTypes = landmark.votes.reduce((acc, vote) => {
+      if (vote.weight > 1) acc.superUsers += 1;
+      else acc.regularUsers += 1;
+      return acc;
+    }, { superUsers: 0, regularUsers: 0 });
+
+    res.status(200).json({
+      success: true,
+      data: {
+        totalVotes: landmark.votes.length,
+        voterTypes,
+        yesPercentage: landmark.votes.filter(v => v.vote === 'yes').length / landmark.votes.length * 100 || 0,
+        noPercentage: landmark.votes.filter(v => v.vote === 'no').length / landmark.votes.length * 100 || 0
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      success: false,
+      message: 'Error getting analytics',
       error: error.message 
     });
   }

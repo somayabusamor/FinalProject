@@ -18,22 +18,51 @@ const userSchema = new mongoose.Schema(
         message: props => `${props.value} is not a valid bcrypt hash!`
       }
     },
-    isSuper: {
-      type: Boolean,
-      default: false
-    },
     role: { 
       type: String, 
       required: true, 
       enum: ['local', 'emergency', 'admin'],
       default: 'local'
     },
-  },
-  {
-    timestamps: true,
+    isSuperlocal: {
+        type: Boolean,
+        default: false
+      },
+      reputationScore: {
+        type: Number,
+        default: 0,
+        min: 0,
+        max: 100
+      },
+      contributions: {
+        verified: { type: Number, default: 0 },
+        rejected: { type: Number, default: 0 }
+      },
+    lastActive: Date, // For reputation decay
+    verifiedLandmarksAdded: {
+      type: Number,
+      default: 0
+    }
+  });
+// Add method to calculate weight
+userSchema.methods.getVoteWeight = function() {
+  let weight = 1.0; // Base weight
+  
+  // Super users get highest weight
+  if (this.isSuperlocal) {
+    weight = 4.0;
+  } 
+  // Users who have added verified landmarks get higher weight
+  else if (this.verifiedLandmarksAdded && this.verifiedLandmarksAdded > 0) {
+    weight = 2.0;
   }
-);
-
+  // Users with high reputation get higher weight
+  else if (this.reputationScore && this.reputationScore >= 70) {
+    weight = 2.0;
+  }
+  
+  return weight;
+};
 // Password hashing middleware
 userSchema.pre('save', function(next) {
   if (this.isModified('password')) {
@@ -70,4 +99,5 @@ const validateUser = (data) => {
 
 // At the bottom of models/User.js:
 const User = mongoose.model('User', userSchema);
-module.exports = { User, validateUser }; // Only this export
+// Change this at the bottom of User.js:
+module.exports = { User, validateUser }; // Keep this as is

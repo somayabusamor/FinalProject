@@ -1,29 +1,13 @@
 import React, { useEffect, useRef, useState } from "react";
 import './homepage.css';
 import { useRouter } from 'expo-router';
-import axios from "axios";
-import mapboxgl from 'mapbox-gl';
-import emergencyIcon from './location_icon.png';
-interface Landmark {
-  id: number;
-  name: string;
-  latitude: number;
-  longitude: number;
-}
 
-
-type Point = {
-  lat: number;
-  lon: number;
-  Name?: string; // or `title?: string` if you prefer
-};
 
 declare global {
   interface Window {
     Plotly: any;
   }
 }
-
 export const unstable_settings = {
   // Prevent this page from being added to the bottom tab bar
   tabBarVisible: false,
@@ -31,75 +15,32 @@ export const unstable_settings = {
 const HomePage: React.FC = () => {
   const mapRef = useRef<HTMLDivElement>(null);
   const [location, setLocation] = useState<{ lat: number; lon: number } | null>(null);
-  const [startPoint, setStartPoint] = useState<{ lat: number; lon: number; title?: string } | null>(null);
-  const [destination, setDestination] = useState<{ lat: number; lon: number;title?: string } | null>(null);
+  const [startPoint, setStartPoint] = useState<{ lat: number; lon: number } | null>(null);
+  const [destination, setDestination] = useState<{ lat: number; lon: number } | null>(null);
   const [route, setRoute] = useState<{ lat: number[]; lon: number[] } | null>(null);
   const [routeDetails, setRouteDetails] = useState<{ distance: string; duration: string } | null>(null);
   const [loading, setLoading] = useState(false);
   const [mapInitialized, setMapInitialized] = useState(false);
   const router = useRouter();
-  const mapInstanceRef = useRef<mapboxgl.Map | null>(null);
-  const [selectedLandmark, setSelectedLandmark] = useState<{ lat: number, lon: number, title: string } | null>(null);
+
+  // Sample landmarks data
+  const [landmarks] = useState<{ lat: number; lon: number; name: string }[]>([
+    { lat: 31.155844, lon: 34.807268, name: "Algergawi Shop" },
+    { lat: 31.15478, lon: 34.809776, name: "Electricity Pole" },
+    { lat: 31.155101, lon: 34.811155, name: "Electric Company" },
+    { lat: 31.163493, lon: 34.820984, name: "Al-Azazma School" },
+    { lat: 31.15632, lon: 34.810717, name: "Algergawi Mosque" },
+    { lat: 31.166333, lon: 34.812421, name: "Abu Swilim Building Materials" },
+    { lat: 31.166306, lon: 34.814712, name: "Abu Swilim Mosque" },
+    { lat: 31.163345, lon: 34.815559, name: "Abu Muharib's Butcher Shop" },
+    { lat: 31.155848, lon: 34.807387, name: "Mauhidet Clinic" },
+    { lat: 31.166374, lon: 34.810585, name: "General Dental Clinic" },
+    { lat: 31.156483, lon: 34.805685, name: "The Entry of the Electric Company" },
+    { lat: 31.155741, lon: 34.806393, name: "The Green Container" },
+  ]);
 
   const MAPBOX_TOKEN = process.env.REACT_APP_MAPBOX_TOKEN || 'pk.eyJ1Ijoic3JhZWwxMiIsImEiOiJjbTVpZmk1angwd2puMmlzNzliendwcDZhIn0.K1gCuh7b0tNdi58FGEhBcA';
 
-  // Sample landmarks data
-    const staticLandmarks = [
-    { lat: 31.155844, lon: 34.807268, title: "Algergawi Shop" },
-    { lat: 31.15478, lon: 34.809776, title: "Electricity Pole" },
-    { lat: 31.155101, lon: 34.811155, title: "Electric Company" },
-    { lat: 31.163493, lon: 34.820984, title: "Al-Azazma School" },
-    { lat: 31.15632, lon: 34.810717, title: "Algergawi Mosque" },
-    { lat: 31.166333, lon: 34.812421, title: "Abu Swilim Building Materials" },
-    { lat: 31.166306, lon: 34.814712, title: "Abu Swilim Mosque" },
-    { lat: 31.163345, lon: 34.815559, title: "Abu Muharib's Butcher Shop" },
-    { lat: 31.155848, lon: 34.807387, title: "Mauhidet Clinic" },
-    { lat: 31.166374, lon: 34.810585, title: "General Dental Clinic" },
-    { lat: 31.156483, lon: 34.805685, title: "The Entry of the Electric Company" },
-    { lat: 31.155741, lon: 34.806393, title: "The Green Container" },
-  ];
-const [mapCenter, setMapCenter] = useState<{ lat: number; lon: number }>({ lat: 33.892166, lon: 35.513889 });
-const [mapZoom, setMapZoom] = useState(10); // Default zoom
-
-  const [landmarks, setLandmarks] = useState(staticLandmarks); // initialize with static
- 
-  const convertToDMS = (lat: number, lon: number) => {
-    const toDMS = (deg: number, type: "lat" | "lon") => {
-      const dir = type === "lat" ? (deg >= 0 ? "N" : "S") : deg >= 0 ? "E" : "W";
-      const abs = Math.abs(deg);
-      const degrees = Math.floor(abs);
-      const minutesFloat = (abs - degrees) * 60;
-      const minutes = Math.floor(minutesFloat);
-      const seconds = ((minutesFloat - minutes) * 60).toFixed(1);
-  
-      return `${degrees}°${String(minutes).padStart(2, '0')}'${String(seconds).padStart(4, '0')}"${dir}`;
-    };
-  
-    return {
-      latDMS: toDMS(lat, "lat"),
-      lonDMS: toDMS(lon, "lon"),
-    };
-  };
-
-  useEffect(() => {
-    const fetchLandmarks = async () => {
-      try {
-        const response = await axios.get("http://localhost:8082/api/landmarks");
-        const dbLandmarks = response.data;
-
-        // Combine frontend + backend landmarks
-        const combined = [...staticLandmarks, ...dbLandmarks];
-        setLandmarks(combined);
-      } catch (error) {
-        console.error("Error fetching landmarks:", error);
-        // Keep only static landmarks if fetch fails
-      }
-    };
-
-    fetchLandmarks();
-  }, []);
-  
-  
   // Load Plotly script dynamically
   useEffect(() => {
     if (!window.Plotly) {
@@ -121,26 +62,15 @@ const [mapZoom, setMapZoom] = useState(10); // Default zoom
       }
     };
   }, []);
-  const handleLandmarkClick = (landmark: Landmark) => {
-    setSelectedLandmark({
-      lat: landmark.latitude,
-      lon: landmark.longitude,
-      title: landmark.name,
-    });
-    setMapCenter({ lat: landmark.latitude, lon: landmark.longitude });
-    setMapZoom(14);
-  };
-  
+
   // Get user location
   useEffect(() => {
     if ("geolocation" in navigator) {
       navigator.geolocation.getCurrentPosition(
         (position) => {
-          
           const { latitude, longitude } = position.coords;
-          //const { latDMS, lonDMS }= convertToDMS(latitude, longitude);
-           const currentLocation = { lat: latitude, lon: longitude };
- setLocation(currentLocation);
+          const currentLocation = { lat: latitude, lon: longitude };
+          setLocation(currentLocation);
           setStartPoint(currentLocation);
         },
         (error) => {
@@ -156,11 +86,6 @@ const [mapZoom, setMapZoom] = useState(10); // Default zoom
       setStartPoint({ lat: 31.155844, lon: 34.807268 });
     }
   }, []);
-  useEffect(() => {
-    if (I18nManager.isRTL !== (language === 'ar')) {
-      I18nManager.forceRTL(language === 'ar');
-    }
-  }, [language]);
 
   // Render or update map
   const renderMap = () => {
@@ -172,54 +97,43 @@ const [mapZoom, setMapZoom] = useState(10); // Default zoom
     const data: any[] = [];
 
     // Add landmarks
-
-    // Add landmarks
     landmarks.forEach((landmark) => {
       data.push({
         type: "scattermapbox",
         lat: [landmark.lat],
         lon: [landmark.lon],
-        text: [landmark.title],
-        mode: "markers+text",
-        marker: {
-          size: 10,
-          color: "blue",
-          symbol: "marker" // optional for default symbol
-        },
-        name: landmark.title
+        text: [landmark.name],
+        mode: "markers",
+        marker: { size: 10, color: "blue" },
+        name: landmark.name
       });
-    })
-   
-// Add start point
-if (startPoint) {
-  const { latDMS, lonDMS } = convertToDMS(startPoint.lat, startPoint.lon);
-  data.push({
-    type: "scattermapbox",
-    lat: [startPoint.lat],
-    lon: [startPoint.lon],
-    text: [`Start Point\n${latDMS}, ${lonDMS}`],
-    mode: "markers+text",
-    marker: { size: 14, color: "red" },
-    textposition: "top right",
-    name: "Start Point"
-  });
-}
+    });
 
-// Add destination
-if (destination) {
-  const { latDMS, lonDMS } = convertToDMS(destination.lat, destination.lon);
-  data.push({
-    type: "scattermapbox",
-    lat: [destination.lat],
-    lon: [destination.lon],
-    text: [`Destination\n${latDMS}, ${lonDMS}`],
-    mode: "markers+text",
-    marker: { size: 14, color: "green" },
-    textposition: "top right",
-    name: "Destination"
-  });
-}
+    // Add start point
+    if (startPoint) {
+      data.push({
+        type: "scattermapbox",
+        lat: [startPoint.lat],
+        lon: [startPoint.lon],
+        text: ["Start Point"],
+        mode: "markers",
+        marker: { size: 14, color: "red" },
+        name: "Start Point"
+      });
+    }
 
+    // Add destination
+    if (destination) {
+      data.push({
+        type: "scattermapbox",
+        lat: [destination.lat],
+        lon: [destination.lon],
+        text: ["Destination"],
+        mode: "markers",
+        marker: { size: 14, color: "green" },
+        name: "Destination"
+      });
+    }
 
     // Add route if available
     if (route) {
@@ -232,24 +146,7 @@ if (destination) {
         name: "Route"
       });
     }
-    const layout = {
-      mapbox: {
-        style: "mapbox://styles/mapbox/streets-v11",
-        center: {  lat: landmarks[0].lat,lon: landmarks[0].lon },
-        zoom: 18,
-        layers: landmarks.map((landmark) => ({
-          sourcetype: "image",
-          source: "https://cdn-icons-png.flaticon.com/512/684/684908.png", // Example pin icon
-          coordinates: [
-            [landmark.lon - 0.001, landmark.lat + 0.001], // top left
-            [landmark.lon + 0.001, landmark.lat + 0.001], // top right
-            [landmark.lon + 0.001, landmark.lat - 0.001], // bottom right
-            [landmark.lon - 0.001, landmark.lat - 0.001]  // bottom left
-          ]
-        }))
-      },
-      margin: { t: 0, b: 0, l: 0, r: 0 }
-    };
+
     const centerPoint = startPoint || location || { lat: 31.155844, lon: 34.807268 };
 
     try {
@@ -282,6 +179,13 @@ if (destination) {
     }
   }, [startPoint, destination, route, landmarks, mapInitialized]);
 
+  const focusOnPoint = (point: { lat: number; lon: number } | null) => {
+    if (!mapRef.current || !point || !window.Plotly) return;
+    window.Plotly.relayout(mapRef.current, {
+      "mapbox.center": { lat: point.lat, lon: point.lon },
+      "mapbox.zoom": 14,
+    });
+  };
 
   const fetchRoute = async () => {
     if (!startPoint || !destination) {
@@ -336,7 +240,7 @@ if (destination) {
       
       if (data.features && data.features.length > 0) {
         const [lon, lat] = data.features[0].center;
-        return { lon, lat };
+        return { lat, lon };
       }
       return null;
     } catch (error) {
@@ -344,80 +248,48 @@ if (destination) {
       return null;
     }
   };
+
   const updateStartPoint = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const address = formData.get("startPoint") as string;
-  
+    
     if (!address.trim()) {
       alert("Please enter a starting address");
       return;
     }
-  
-    // 1. Check if address exists in staticLandmarks
-    const landmark = staticLandmarks.find(
-      (lm) => lm.title.toLowerCase() === address.trim().toLowerCase()
-    );
-  
-    if (landmark) {
-      // If found in staticLandmarks, use its coordinates directly
-      setStartPoint({ lat: landmark.lat, lon: landmark.lon, title: landmark.title });
-      focusOnPoint({ lat: landmark.lat, lon: landmark.lon });
-      return;
-    }
-  
-    // 2. If not found in staticLandmarks, try geocoding
+
     const result = await geocodeAddress(address);
     if (result) {
       setStartPoint(result);
       focusOnPoint(result);
     } else {
-      alert(t.HomePage.couldNotFindLocation);
+      alert("Could not find this location. Please try a different address.");
     }
   };
-  
 
   const updateDestination = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const address = formData.get("destination") as string;
-  
+    
     if (!address.trim()) {
       alert("Please enter a destination address");
       return;
     }
-  
-    // Check if address exists in staticLandmarks
-    const landmark = staticLandmarks.find(
-      (lm) => lm.title.toLowerCase() === address.trim().toLowerCase()
-    );
-  
-    if (landmark) {
-      // If found in staticLandmarks, use its coordinates directly
-      setDestination({ lat: landmark.lat, lon: landmark.lon, title: landmark.title});
-      focusOnPoint({ lat: landmark.lat, lon: landmark.lon });
-      return;
-    }
-  
-    // Otherwise, try to geocode
+
     const result = await geocodeAddress(address);
     if (result) {
       setDestination(result);
       focusOnPoint(result);
     } else {
-      alert(t.HomePage.couldNotFindLocation);
+      alert("Could not find this location. Please try a different address.");
     }
   };
-  
 
-  const focusOnPoint = (point: { lat: number; lon: number } | null) => {
-    if (!mapRef.current || !point || !window.Plotly) return;
-    window.Plotly.relayout(mapRef.current, {
-      "mapbox.center": { lat: point.lat, lon: point.lon },
-      "mapbox.zoom": 14,
-    });
+  const handleNavigateToLandmarks = () => {
+    router.push('/landmarks');
   };
-  
 
   // Update the return statement with new button layout:
   return (
@@ -425,56 +297,56 @@ if (destination) {
       <div className="left-container">
         <form onSubmit={updateStartPoint}>
           <label>
-            {t.HomePage.startingPoint}:
+            Starting Point:
             <input
               type="text"
               name="startPoint"
-              placeholder="lat,lon : Current Location or specific address"
+              placeholder="e.g., Current Location or specific address"
               defaultValue={startPoint ? "Current Location" : ""}
               required
             />
           </label>
-          <button type="submit">{t.HomePage.setStartingPoint}</button>
+          <button type="submit">Set Starting Point</button>
           <div className="button-group">
-            <button
-              onClick={() => focusOnPoint(startPoint)}
+            <button 
+              onClick={() => focusOnPoint(startPoint)} 
               disabled={!startPoint}
               className="control-button"
             >
-              {t.HomePage.goToStart}
+              Go to Start
             </button>
           </div>
         </form>
 
         <form onSubmit={updateDestination}>
           <label>
-            {t.HomePage.destination}:
+            Destination:
             <input
               type="text"
               name="destination"
-              placeholder="lat,lon / Destination Name"
+              placeholder="e.g., Algergawi Mosque, Gaza"
               required
             />
           </label>
-          <button type="submit">{t.HomePage.setDestination}</button>
+          <button type="submit">Set Destination</button>
           <div className="button-group">
-            <button
-              onClick={() => focusOnPoint(destination)}
+            <button 
+              onClick={() => focusOnPoint(destination)} 
               disabled={!destination}
               className="control-button"
             >
-              {t.HomePage.goToDestination}
+              Go to Destination
             </button>
           </div>
         </form>
 
         <div className="route-actions">
-          <button
-            onClick={fetchRoute}
+          <button 
+            onClick={fetchRoute} 
             disabled={!startPoint || !destination || loading}
             className="route-button"
           >
-            {loading ? t.HomePage.loading : t.HomePage.showRoute}
+            {loading ? "Loading..." : "Show Route"}
           </button>
         </div>
 
@@ -485,37 +357,11 @@ if (destination) {
             <p>Duration: {routeDetails.duration}</p>
           </div>
         )}
-        
       </div>
-      <div className="right-container">
-      <div ref={mapRef} className="map-container">
-        {selectedLandmark && (
-          <div
-            className="icon-overlay"
-            style={{
-              position: 'absolute',
-              top: '40%',
-              left: '40%',
-              transform: 'translate(-50%, -50%)',
-              textAlign: 'center'
-            }}
-          >
-            <img
-              src={emergencyIcon}
-              alt={selectedLandmark.title}
-              style={{ width: '80px', height: '80px' }}
-            />
-            <div>{selectedLandmark.title}</div>
-          </div>
-        )}
-      </div>
-</div>
-
-  
-     <div ref={mapRef} className="map-container"></div>
+      <div ref={mapRef} className="map-container"></div>
     </div>
-    
   );
 };
+
 
 export default HomePage;

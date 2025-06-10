@@ -31,7 +31,7 @@ router.post('/login', async (req, res) => {
       return res.status(401).json({ message: 'Invalid credentials' });
     }
     const token = jwt.sign(
-      { userId: user._id, role: user.role, isSuper: user.isSuper },
+      { userId: user._id, role: user.role, isSuperlocal: user.isSuperlocal },
       process.env.JWTPRIVATEKEY,
       { expiresIn: '1h' }
     );
@@ -43,7 +43,7 @@ router.post('/login', async (req, res) => {
         _id: user._id,
         email: user.email,
         role: user.role,
-        isSuper: user.isSuper
+        isSuperlocal: user.isSuperlocal
       }
     });
   } catch (error) {
@@ -70,7 +70,7 @@ router.get('/me', async (req, res) => {
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
     }
-
+  
     res.json({
       success: true,
       user: {
@@ -109,7 +109,7 @@ router.post('/request-super', async (req, res) => {
     }
 
     // 2. Check if already Super Local
-    if (user.isSuper) {
+    if (user.isSuperlocal) {
       return res.status(400).json({ 
         message: 'User is already a Super Local' 
       });
@@ -213,7 +213,7 @@ router.patch('/superlocal/requests/:requestId', async (req, res) => {
     if (status === 'approved') {
       updatedUser = await User.findByIdAndUpdate(
         request.userId._id,
-        { $set: { isSuper: true } }, // Use $set operator
+        { $set: { isSuperlocal: true } }, // Use $set operator
         { new: true } // Return the updated document
       );
       
@@ -230,7 +230,7 @@ router.patch('/superlocal/requests/:requestId', async (req, res) => {
       message: `Request ${status} and removed`,
       updatedUser: status === 'approved' ? {
         _id: updatedUser._id,
-        isSuper: updatedUser.isSuper
+        isSuperlocal: updatedUser.isSuperlocal
       } : null
     });
   } catch (error) {

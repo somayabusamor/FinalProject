@@ -81,7 +81,7 @@ router.put('/:id/vote', auth, async (req, res) => {
       route.votes[existingVoteIndex] = {
         userId: user._id,
         vote,
-        weight: user.isSuper ? 2 : 1
+        weight: user.isSuperlocal ? 2 : 1
       };
     } 
     // Otherwise add new vote
@@ -89,7 +89,7 @@ router.put('/:id/vote', auth, async (req, res) => {
       route.votes.push({
         userId: user._id,
         vote,
-        weight: user.isSuper ? 2 : 1
+        weight: user.isSuperlocal ? 2 : 1
       });
     }
 

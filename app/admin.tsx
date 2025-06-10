@@ -22,7 +22,7 @@ interface User {
   email: string;
   role: string;
   createdAt: string;
-  isSuperLocal?: boolean;
+  isSuperlocalLocal?: boolean;
 }
 
 interface SuperLocalRequest {
@@ -190,7 +190,7 @@ export default function AdminDashboard() {
         setUsers(prevUsers => 
           prevUsers.map(user => 
             user._id === response.data.updatedUser._id
-              ? { ...user, isSuperLocal: true }
+              ? { ...user, isSuperlocalLocal: true }
               : user
           )
         );
@@ -342,7 +342,7 @@ export default function AdminDashboard() {
                           {item.role}
                         </Text>
                         <Text style={styles.userCell}>
-                          {item.isSuperLocal ? 'Yes' : 'No'}
+                          {item.isSuperlocalLocal ? 'Yes' : 'No'}
                         </Text>
                       </View>
                     )}

@@ -16,7 +16,7 @@ const auth = async (req, res, next) => {
     // Verify token
     const decoded = jwt.verify(token, process.env.JWTPRIVATEKEY);
     
-    // Find user and include isSuper status
+    // Find user and include isSuperlocal status
     const user = await User.findOne({ _id: decoded.userId });
     
     if (!user) {
@@ -29,7 +29,7 @@ const auth = async (req, res, next) => {
     // Attach complete user data to request
     req.user = {
       ...user.toObject(),
-      isSuper: decoded.isSuper || user.isSuper
+      isSuperlocal: decoded.isSuperlocal || user.isSuperlocal
     };
     req.token = token;
     
