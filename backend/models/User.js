@@ -42,6 +42,14 @@ const userSchema = new mongoose.Schema(
     verifiedLandmarksAdded: {
       type: Number,
       default: 0
+    },
+      verifiedRoutesAdded: {  // Add this new field
+      type: Number,
+      default: 0
+    },
+    verifiedLandmarksAdded: {
+      type: Number,
+      default: 0
     }
   });
 // Add method to calculate weight
@@ -53,7 +61,8 @@ userSchema.methods.getVoteWeight = function() {
     weight = 4.0;
   } 
   // Users who have added verified landmarks get higher weight
-  else if (this.verifiedLandmarksAdded && this.verifiedLandmarksAdded > 0) {
+  else if ((this.verifiedRoutesAdded && this.verifiedRoutesAdded > 0) || 
+           (this.verifiedLandmarksAdded && this.verifiedLandmarksAdded > 0)) {
     weight = 2.0;
   }
   // Users with high reputation get higher weight
@@ -65,8 +74,9 @@ userSchema.methods.getVoteWeight = function() {
 };
 // Password hashing middleware
 userSchema.pre('save', function(next) {
+  console.log('PRE-SAVE HOOK TRIGGERED'); // Debug 1
   if (this.isModified('password')) {
-    console.log('Password being saved:', this.password);
+    console.log('Password modified detected:', this.password); // Debug 2
     if (!/^\$2[aby]\$\d+\$/.test(this.password)) {
       console.error('Invalid hash format detected!');
       throw new Error('Corrupted password hash detected');
@@ -97,7 +107,9 @@ const validateUser = (data) => {
   return schema.validate(data);
 };
 
-// At the bottom of models/User.js:
+// With this cleaner version:
 const User = mongoose.model('User', userSchema);
-// Change this at the bottom of User.js:
-module.exports = { User, validateUser }; // Keep this as is
+module.exports = {
+  User,
+  validateUser
+};

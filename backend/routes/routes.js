@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Route = require('../models/Route');
-const User = require('../models/User');
+const { User } = require('../models/User');
 const auth = require('../middleware/auth');
 const mongoose = require('mongoose');
 
@@ -52,78 +52,88 @@ router.post('/', auth, async (req, res) => {
   }
 });
 // PUT vote on route
-router.put('/:id/vote', auth, async (req, res) => {
+  router.put('/:id/vote', auth, async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const { vote } = req.body;
-    const route = await Route.findById(req.params.id);
     
-    if (!route) {
-      return res.status(404).json({ 
-        success: false,
-        message: 'Route not found' 
-      });
-    }
-
     if (!['yes', 'no'].includes(vote)) {
+      await session.abortTransaction();
       return res.status(400).json({ 
         success: false,
         message: 'Invalid vote type' 
       });
     }
 
-    const user = req.user;
-    const existingVoteIndex = route.votes.findIndex(v => 
-      v.userId.toString() === user._id.toString()
-    );
-
-    // If user already voted, update their vote
-    if (existingVoteIndex !== -1) {
-      route.votes[existingVoteIndex] = {
-        userId: user._id,
-        vote,
-        weight: user.isSuperlocal ? 2 : 1
-      };
-    } 
-    // Otherwise add new vote
-    else {
-      route.votes.push({
-        userId: user._id,
-        vote,
-        weight: user.isSuperlocal ? 2 : 1
+    // Get user with proper fields
+    const user = await User.findById(req.user._id)
+      .select('isSuperlocal verifiedRoutesAdded reputationScore')
+      .session(session);
+    
+    if (!user) {
+      await session.abortTransaction();
+      return res.status(404).json({ 
+        success: false,
+        message: 'User not found' 
       });
     }
 
-    // Recalculate verification status
-    const { totalWeight, yesWeight } = route.votes.reduce((acc, v) => {
-      const weight = v.weight || 1;
-      return {
-        totalWeight: acc.totalWeight + weight,
-        yesWeight: v.vote === 'yes' ? acc.yesWeight + weight : acc.yesWeight
-      };
-    }, { totalWeight: 0, yesWeight: 0 });
+    // Use the getVoteWeight method
+    const weight = user.getVoteWeight();
 
-    route.verified = totalWeight >= 5 && (yesWeight / totalWeight) >= 0.8;
+    // Get and lock route
+    const route = await Route.findById(req.params.id).session(session);
+    if (!route) {
+      await session.abortTransaction();
+      return res.status(404).json({ 
+        success: false,
+        message: 'Route not found' 
+      });
+    }
 
-    const updatedRoute = await route.save();
+    // Update or add vote
+    const voteIndex = route.votes.findIndex(v => 
+      v.userId.toString() === user._id.toString()
+    );
     
+    const voteData = {
+      userId: user._id,
+      vote,
+      weight,
+      timestamp: new Date()
+    };
+
+    if (voteIndex >= 0) {
+      route.votes[voteIndex] = voteData;
+    } else {
+      route.votes.push(voteData);
+    }
+
+    // Save and update verification status
+    await route.save({ session });
+    const updatedRoute = await route.updateVerificationStatus();
+    
+    await session.commitTransaction();
+
     res.status(200).json({
       success: true,
-      data: {
-        ...updatedRoute.toObject(),
-        calculatedWeights: { totalWeight, yesWeight }
-      },
-      message: existingVoteIndex !== -1 
-        ? 'Vote updated successfully' 
-        : 'Vote recorded successfully'
+      data: updatedRoute,
+      message: voteIndex >= 0 ? 'Vote updated successfully' : 'Vote recorded successfully',
+      userWeight: weight
     });
 
   } catch (error) {
+    await session.abortTransaction();
     console.error("Voting error:", error);
     res.status(500).json({ 
       success: false,
       message: "Server error",
       error: process.env.NODE_ENV === 'development' ? error.message : undefined
     });
+  } finally {
+    session.endSession();
   }
 });
 

@@ -6,6 +6,7 @@ import { useAuth } from './AuthContext';
 import { useRouter } from 'expo-router';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { MaterialIcons } from '@expo/vector-icons';
+import mongoose from "mongoose";
 const API_BASE_URL = 'http://localhost:8082/api'; // Should match your backend
 
 interface Location {
@@ -21,21 +22,36 @@ interface RoutePoint {
 interface Route {
   _id: string;
   title: string;
-  points: RoutePoint[];
+  points: { lat: number; lon: number }[];
   color: string;
   verified: boolean;
-  votes: {
-    userId: string;
-    vote: 'yes' | 'no';
-    weight?: number; // Add this optional property
-
-  }[];
+  status: 'pending' | 'verified' | 'rejected' | 'disputed';
+  votes: RouteVote[];
+  verificationData?: VerificationData;
+  createdBy: mongoose.Types.ObjectId | string;
+  _calculatedWeights?: {
+    totalWeight: number;
+    yesWeight: number;
+    noWeight: number;
+  };
 }
-
-interface VoteResponse {
+interface VerificationData {
+  totalWeight: number;
+  yesWeight: number;
+  noWeight: number;
+  confidenceScore: number;
+}
+interface RouteVote {
+  userId: string;
+  vote: 'yes' | 'no';
+  weight: number;
+  timestamp?: Date;
+}
+interface RouteVoteResponse {
   success: boolean;
   data: Route;
   message?: string;
+  userWeight?: number;
 }
 // Replace your existing ErrorResponse interface with:
 interface ErrorResponse {
@@ -66,14 +82,15 @@ const RoutePage: React.FC = () => {
   const [newRoute, setNewRoute] = useState<Omit<Route, '_id' | 'verified' | 'votes'>>({
     title: '',
     points: [],
-    color: '#3A86FF'
+    color: '#3A86FF',
+    status: 'pending',
+    createdBy: ''
   });
   const { user, token } = useAuth();
   const router = useRouter();
   const [voteError, setVoteError] = useState("");
   const [voteSuccess, setVoteSuccess] = useState("");
-
-
+  
   type AppStyles = {
     [key: string]: React.CSSProperties;
   };
@@ -301,6 +318,20 @@ const RoutePage: React.FC = () => {
       backgroundColor: '#f44336'
     }
   };
+  // Add this helper function to get user weight
+const getUserWeight = (user: any): number => {
+  if (!user) return 1;
+
+  // Super local users get 4x weight
+  if (user.isSuperlocal) return 4;
+
+  // Users with high reputation get 2x weight
+  if (user.reputationScore && user.reputationScore >= 70) return 2;
+
+  // Default weight
+  return 1;
+};
+
     // Move the distance calculation functions up here
   const calculateDistance = (point1: RoutePoint, point2: RoutePoint) => {
     const R = 6371e3; // Earth radius in meters
@@ -421,6 +452,9 @@ const RoutePage: React.FC = () => {
     };
 
     loadPlotly();
+      setTimeout(() => {
+    setIsMapLoading(false);
+  }, 1000); // adjust based on actual loading
   }, [location, isMapLoading]);
 
   const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -444,17 +478,12 @@ const addRoutePoint = (e: React.MouseEvent<HTMLDivElement>) => {
   const x = e.clientX - bounds.left;
   const y = e.clientY - bounds.top;
 
-  const width = bounds.width;
-  const height = bounds.height;
-  const zoom = mapZoom;
+  // No need to access plotElement.layout as it's not used here
+  // Calculate longitude and latitude properly
+  const lon = mapCenter.lon + ((x - bounds.width/2) / (bounds.width/2)) * (180 / Math.pow(2, mapZoom));
+  const lat = mapCenter.lat - ((y - bounds.height/2) / (bounds.height/2)) * (180 / Math.pow(2, mapZoom));
 
-  const scale = 256 * Math.pow(2, zoom);
-  const lonPerPixel = 360 / scale;
-  const latPerPixel = 360 / scale;
-
-  const lon = mapCenter.lon + (x - width / 2) * lonPerPixel;
-  const lat = mapCenter.lat - (y - height / 2) * latPerPixel;
-
+  // Clamp latitude to valid map bounds
   const latClamped = Math.min(85, Math.max(-85, lat));
 
   setTempRoutePoints(prev => [...prev, { lat: latClamped, lon }]);
@@ -479,50 +508,38 @@ const saveRoute = async () => {
       return;
     }
 
-    const userString = await AsyncStorage.getItem('user');
-    if (!userString) {
-      throw new Error('User data not found');
-    }
-
-    const user = JSON.parse(userString);
-    
     const response = await axios.post(`${API_BASE_URL}/routes`, {
       title: newRoute.title.trim(),
       points: tempRoutePoints,
-      color: newRoute.color || '#3A86FF',
-      createdBy: user._id
+      color: newRoute.color || '#3A86FF'
     }, {
       headers: {
         'Content-Type': 'application/json',
         'Authorization': `Bearer ${token}`
-      },
-      timeout: 10000 // 10 second timeout
+      }
     });
 
-    // Rest of your success handling...
-  } catch (err) {
-    const error = err as AxiosError<{ message: string }>;
+    // Add the new route to the list
+    setRoutes(prev => [...prev, response.data.data]);
+    
+    // Reset drawing state
+    setIsDrawingRoute(false);
+    setTempRoutePoints([]);
+    setNewRoute({
+      title: '',
+      points: [],
+      color: '#3A86FF',
+      status: 'pending',
+      createdBy: ''
+    });
+    
+    alert('Route saved successfully!');
+  } catch (error) {
     console.error("Save failed:", error);
-    
-    let errorMessage = 'Failed to save route';
-    if (error.code === 'ECONNABORTED') {
-      errorMessage = 'Request timed out';
-    } else if (error.response) {
-      // Handle specific status codes
-      if (error.response.status === 400) {
-        errorMessage = error.response.data?.message || 'Invalid request data';
-      } else if (error.response.status === 401) {
-        errorMessage = 'Session expired. Please login again.';
-        await AsyncStorage.multiRemove(['user', 'token']);
-        router.push('/login');
-      } else if (error.response.status === 500) {
-        errorMessage = 'Server error. Please try again later.';
-      }
-    }
-    
-    alert(`Save failed: ${errorMessage}`);
+    alert('Failed to save route. Please try again.');
   }
 };
+// Update your handleRouteVote function to use weights
 const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
   try {
     const token = await AsyncStorage.getItem('token');
@@ -538,48 +555,69 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
     const user = JSON.parse(await AsyncStorage.getItem('user') || '{}');
     const currentRoute = routes.find(r => r._id === routeId);
     const currentVote = currentRoute?.votes.find(v => v.userId === user._id);
+    // Add validation before sending
+        if (!routeId || !voteType) {
+          throw new Error('Invalid vote parameters');
+        }
 
-    const response = await axios.put(
+    const response = await axios.put<RouteVoteResponse>(
       `${API_BASE_URL}/routes/${routeId}/vote`,
       { vote: voteType },
       {
-        headers: { 
+        headers: {
           'Content-Type': 'application/json',
           'Authorization': `Bearer ${token}`
         }
       }
     );
 
+    // Update the routes state with the new vote data
     setRoutes(prevRoutes => prevRoutes.map(route => {
       if (route._id === routeId) {
         return {
           ...route,
           votes: response.data.data.votes,
           verified: response.data.data.verified,
-          _calculatedWeights: response.data.data.calculatedWeights
+          verificationData: response.data.data.verificationData,
+          _calculatedWeights: response.data.data._calculatedWeights
         };
       }
       return route;
     }));
 
+    // Use the weight from the response or fallback to calculated weight
+    const weight = response.data.userWeight ?? getUserWeight(user);
     setVoteSuccess(
-      currentVote 
-        ? `Changed vote to ${voteType} (Weight: ${user.isSuperlocal ? '2' : '1'})`
-        : `Vote recorded! (Weight: ${user.isSuperlocal ? '2' : '1'})`
+      currentVote
+        ? `Changed vote to ${voteType} (Weight: ${weight}x)`
+        : `Vote recorded! (Weight: ${weight}x)`
     );
 
-  } catch (error) {
-    const axiosError = error as AxiosError<{ message?: string }>;
-    console.error("Voting error:", {
-      status: axiosError.response?.status,
-      data: axiosError.response?.data,
-      error: axiosError.message
-    });
-    
-    setVoteError(axiosError.response?.data?.message || 'Failed to submit vote');
+  } catch (error: any) {
+    let errorMessage = "Failed to submit vote";
 
-    if (axiosError.response?.status === 401) {
-      await AsyncStorage.multiRemove(['user', 'token']);
+    if (error.response) {
+      console.error("Server response error:", {
+        status: error.response.status,
+        data: error.response.data,
+        headers: error.response.headers
+      });
+
+      errorMessage = error.response.data?.error ||
+                    error.response.data?.message ||
+                    `Server error (${error.response.status})`;
+    } else if (error.request) {
+      console.error("No response received:", error.request);
+      errorMessage = "No response from server";
+    } else {
+      console.error("Request setup error:", error.message);
+      errorMessage = error.message;
+    }
+
+    setVoteError(errorMessage);
+
+    if (error.response?.status === 401) {
+      await AsyncStorage.removeItem('token');
       router.push('/login');
     }
   } finally {
@@ -644,34 +682,38 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
       }, 3000);
     }
   };
+  
     // Add this useEffect to render the preview map when a route is selected
-      useEffect(() => {
-        if (selectedRoute && previewMapRef.current) {
-          window.Plotly.newPlot(
-            previewMapRef.current,
-            [{
-              type: "scattermapbox",
-              lat: selectedRoute.points.map(p => p.lat),
-              lon: selectedRoute.points.map(p => p.lon),
-              mode: "lines+markers",
-              line: { color: selectedRoute.color, width: 3 },
-              marker: { size: 6, color: selectedRoute.color }
-            }],
-            {
-              mapbox: { 
-                style: "open-street-map", 
-                center: {
-                  lat: selectedRoute.points[0].lat,
-                  lon: selectedRoute.points[0].lon
-                },
-                zoom: 12 
-              },
-              margin: { t: 0, b: 0, l: 0, r: 0 },
-              showlegend: false
-            }
-          );
-        }
-      }, [selectedRoute]);
+    useEffect(() => {
+  if (selectedRoute && previewMapRef.current) {
+    window.Plotly.newPlot(
+      previewMapRef.current,
+      [{
+        type: "scattermapbox",
+        lat: selectedRoute.points.map(p => p.lat),
+        lon: selectedRoute.points.map(p => p.lon),
+        mode: "lines+markers",
+        line: { color: selectedRoute.color, width: 3 },
+        marker: { size: 6, color: selectedRoute.color }
+      }],
+      {
+        mapbox: { 
+          style: "open-street-map",
+          center: {
+            lat: selectedRoute.points[0].lat,
+            lon: selectedRoute.points[0].lon
+          },
+          zoom: 12,
+          projection: {
+            type: 'mercator'
+          }
+        },
+        margin: { t: 0, b: 0, l: 0, r: 0 },
+        showlegend: false
+      }
+    );
+  }
+}, [selectedRoute]);
 
   const renderMap = () => {
     if (!window.Plotly || !mapRef.current || !location) return;
@@ -730,15 +772,18 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
       hoverinfo: "none"
     } : null;
 
-    const layout = {
-      mapbox: {
-        style: "open-street-map",
-        center: mapCenter || { lat: location.lat, lon: location.lon },
-        zoom: mapZoom,
-      },
-      margin: { t: 0, b: 0, l: 0, r: 0 },
-      showlegend: false
-    };
+      const layout = {
+    mapbox: {
+      style: "open-street-map",
+      center: mapCenter || { lat: location.lat, lon: location.lon },
+      zoom: mapZoom,
+      projection: {
+        type: 'mercator'  // Ensure we're using proper projection
+      }
+    },
+    margin: { t: 0, b: 0, l: 0, r: 0 },
+    showlegend: false
+  };
 
     const traces = [userLocationTrace, ...routeTraces];
     if (drawingRouteTrace) traces.push(drawingRouteTrace);
@@ -775,57 +820,67 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
     });
   };
 
-  return (
-    <div style={styles.container}>
-      {isMapLoading ? (
-        <div style={styles.loadingContainer}>
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            <div style={{
-              border: "6px solid #f3f3f3",
-              borderTop: "6px solid #6d4c41",
-              borderRadius: "50%",
-              width: 48,
-              height: 48,
-              animation: "spin 1s linear infinite"
-            }} />
-            <span style={{ marginTop: 16, color: "#6d4c41", fontWeight: "bold" }}>Loading...</span>
-            <style>
-              {`@keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}
-            </style>
-          </div>
-        </div>
-      ) : (
-        <>
-          <div
-            ref={mapRef}
-            onMouseDown={isDrawingRoute ? handleMouseDown : undefined}
-            onMouseMove={isDrawingRoute ? handleMouseMove : undefined}
-            onMouseUp={isDrawingRoute ? handleMouseUp : undefined}
-            style={styles.mapContainer}
-          />
+return (
+  <div style={styles.container}>
+    {isMapLoading ? (
+      <div style={styles.loadingContainer}>
+        {/* Loading spinner */}
+      </div>
+    ) : (
+      <>
+        <div
+          ref={mapRef}
+          onMouseDown={isDrawingRoute ? handleMouseDown : undefined}
+          onMouseMove={isDrawingRoute && isDrawing ? handleMouseMove : undefined}
+          onMouseUp={isDrawingRoute ? handleMouseUp : undefined}
+          onMouseLeave={isDrawingRoute ? handleMouseUp : undefined}
+          style={{
+            ...styles.mapContainer,
+            cursor: isDrawingRoute ? 'crosshair' : 'grab'
+          }}
+        />
 
-          {/* Draw Route Button */}
+        {/* Combined Header with Draw Route Button */}
+        <div style={{
+          position: 'absolute',
+          top: '20px',
+          left: '20px',
+          right: '20px',
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          backgroundColor: 'rgba(255,255,255,0.9)',
+          padding: '15px',
+          borderRadius: '12px',
+          border: '1px solid #f0e6e2',
+          zIndex: 1,
+          userSelect: 'none'
+        }}>
+          <div>
+            <h3 style={{ margin: 0 }}>Routes Map</h3>
+            <p style={{ margin: '5px 0 0 0' }}>Click "Draw Route" to create a new route</p>
+          </div>
+          
           <button 
             onClick={() => setIsDrawingRoute(!isDrawingRoute)}
             style={{
-              position: 'fixed',
-              top: '20px',
-              right: '20px',
-              zIndex: 1000,
-              padding: '12px 16px',
               backgroundColor: isDrawingRoute ? '#f44336' : '#6d4c41',
               color: '#FFD700',
               border: 'none',
               borderRadius: '8px',
+              padding: '12px 16px',
               cursor: 'pointer',
               fontWeight: 'bold',
               fontSize: '16px',
               display: 'flex',
               alignItems: 'center',
-              gap: '8px'
+              gap: '8px',
+              boxShadow: '0 2px 4px rgba(0,0,0,0.2)',
+              transition: 'all 0.3s ease',
+              minWidth: '150px',
+              justifyContent: 'center'
             }}
           >
-            
             <MaterialIcons 
               name={isDrawingRoute ? 'close' : 'edit'} 
               size={20} 
@@ -833,54 +888,182 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
             />
             {isDrawingRoute ? 'Cancel Drawing' : 'Draw Route'}
           </button>
+        </div>
 
         {isDrawingRoute && (
           <div style={{
             ...styles.formContainer,
-            top: '60px',  // Positioned below the button
-            right: 20,    // Aligned with button
-            left: 'auto', // Override previous left positioning
-            transform: 'none', // Remove previous transform
-            width: '300px'
+            top: '80px',
+            right: 20,
+            left: 'auto',
+            transform: 'none',
+            width: '320px',
+            maxHeight: '80vh',
+            overflowY: 'auto'
           }}>
-            <h3>Drawing Route</h3>
-            <p>Click and drag to draw your route</p>
-            <p>Points: {tempRoutePoints.length}</p>
-            
-            <input
-              type="text"
-              placeholder="Route title"
-              value={newRoute.title}
-              onChange={(e) => setNewRoute({...newRoute, title: e.target.value})}
-              style={styles.input}
-            />
-            
-            <div style={styles.buttonGroup}>
-              <button 
-                onClick={saveRoute}
-                disabled={tempRoutePoints.length < 2 || !newRoute.title.trim()}
-                style={{
-                  ...styles.button,
-                  opacity: (tempRoutePoints.length < 2 || !newRoute.title.trim()) ? 0.5 : 1
-                }}
-              >
-                Save Route
-              </button>
-              <button 
+            <div style={{ 
+              display: 'flex', 
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginBottom: '15px'
+            }}>
+              <h3 style={{ margin: 0 }}>Drawing Route</h3>
+              <MaterialIcons 
+                name="close" 
+                size={24} 
+                color="#6d4c41" 
                 onClick={() => {
                   setIsDrawingRoute(false);
                   setTempRoutePoints([]);
                   setNewRoute({
                     title: '',
                     points: [],
-                    color: '#3A86FF'
+                    color: '#3A86FF',
+                    status: 'pending',
+                    createdBy: ''
                   });
                 }}
-                style={styles.buttonSecondary}
+                style={{ cursor: 'pointer' }}
+              />
+            </div>
+
+            <div style={{ 
+              backgroundColor: '#f5f5f5', 
+              padding: '10px',
+              borderRadius: '8px',
+              marginBottom: '15px'
+            }}>
+              <p style={{ margin: '5px 0' }}>
+                <MaterialIcons name="info" size={16} color="#6d4c41" /> 
+                <span style={{ marginLeft: '8px' }}>Click and drag to draw</span>
+              </p>
+              <p style={{ 
+                margin: '5px 0',
+                fontWeight: 'bold',
+                color: tempRoutePoints.length < 2 ? '#f44336' : '#4CAF50'
+              }}>
+                Points: {tempRoutePoints.length} {tempRoutePoints.length < 2 && '(Need at least 2)'}
+              </p>
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label htmlFor="route-title" style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: '#5d4037'
+              }}>
+                Route Title
+              </label>
+              <input
+                id="route-title"
+                type="text"
+                placeholder="Enter route name"
+                value={newRoute.title}
+                onChange={(e) => setNewRoute({...newRoute, title: e.target.value})}
+                style={{
+                  ...styles.input,
+                  borderColor: !newRoute.title.trim() ? '#f44336' : '#d7ccc8'
+                }}
+              />
+              {!newRoute.title.trim() && (
+                <p style={{ color: '#f44336', fontSize: '12px', margin: '5px 0 0 0' }}>
+                  Please enter a route title
+                </p>
+              )}
+            </div>
+
+            <div style={{ marginBottom: '15px' }}>
+              <label style={{
+                display: 'block',
+                marginBottom: '8px',
+                fontWeight: '600',
+                color: '#5d4037'
+              }}>
+                Route Color
+              </label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                {['#3A86FF', '#4CAF50', '#FF9800', '#9C27B0', '#F44336'].map(color => (
+                  <div 
+                    key={color}
+                    onClick={() => setNewRoute({...newRoute, color})}
+                    style={{
+                      width: '30px',
+                      height: '30px',
+                      borderRadius: '50%',
+                      backgroundColor: color,
+                      border: newRoute.color === color ? '3px solid #6d4c41' : '2px solid #d7ccc8',
+                      cursor: 'pointer'
+                    }}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={newRoute.color}
+                  onChange={(e) => setNewRoute({...newRoute, color: e.target.value})}
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    padding: 0,
+                    border: 'none',
+                    cursor: 'pointer'
+                  }}
+                />
+              </div>
+            </div>
+
+            <div style={styles.buttonGroup}>
+              <button 
+                onClick={() => setTempRoutePoints([])}
+                disabled={tempRoutePoints.length === 0}
+                style={{
+                  ...styles.buttonSecondary,
+                  opacity: tempRoutePoints.length === 0 ? 0.5 : 1,
+                  flex: 1
+                }}
               >
-                Cancel
+                <MaterialIcons 
+                  name="delete" 
+                  size={18} 
+                  style={{ marginRight: 8 }}
+                />
+                Clear
+              </button>
+              <button 
+                onClick={saveRoute}
+                disabled={tempRoutePoints.length < 2 || !newRoute.title.trim()}
+                style={{
+                  ...styles.button,
+                  opacity: (tempRoutePoints.length < 2 || !newRoute.title.trim()) ? 0.5 : 1,
+                  flex: 2
+                }}
+              >
+                <MaterialIcons 
+                  name="save" 
+                  size={18} 
+                  style={{ marginRight: 8 }}
+                />
+                Save Route
               </button>
             </div>
+
+            {tempRoutePoints.length > 1 && (
+              <div style={{ 
+                marginTop: '15px',
+                backgroundColor: '#f5f5f5',
+                padding: '10px',
+                borderRadius: '8px'
+              }}>
+                <p style={{ margin: '5px 0', fontWeight: '600' }}>
+                  Route Preview
+                </p>
+                <p style={{ margin: '5px 0' }}>
+                  Distance: {calculateTotalDistance(tempRoutePoints) > 1000 
+                    ? `${(calculateTotalDistance(tempRoutePoints)/1000).toFixed(2)} km` 
+                    : `${calculateTotalDistance(tempRoutePoints).toFixed(0)} meters`}
+                </p>
+              </div>
+            )}
           </div>
         )}
 
@@ -912,11 +1095,6 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
             </ul>
           </div>
         )}
-
-        <div style={styles.header}>
-          <h3>Routes Map</h3>
-          <p>Click "Draw Route" to create a new route</p>
-        </div>
       </>
     )}
 
@@ -966,35 +1144,80 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
               {!selectedRoute.verified && (
                 <div style={{ marginTop: '15px' }}>
                   <h4 style={styles.subtitle}>Verification Status</h4>
-                  
-                  {/* Replace the existing weight calculation with this */}
+
+                  {/* Verification progress with weights */}
                   {(() => {
-                    // Calculate weights with proper type checking
-                    const yesWeight = selectedRoute.votes
-                      .filter(v => v.vote === 'yes')
-                      .reduce((sum, vote) => sum + (vote.weight || 1), 0);
+                    const yesWeight = selectedRoute.verificationData?.yesWeight || 
+                      selectedRoute.votes
+                        .filter(v => v.vote === 'yes')
+                        .reduce((sum, vote) => sum + (vote.weight || 1), 0);
 
-                    const noWeight = selectedRoute.votes
-                      .filter(v => v.vote === 'no')
-                      .reduce((sum, vote) => sum + (vote.weight || 1), 0);
+                    const noWeight = selectedRoute.verificationData?.noWeight || 
+                      selectedRoute.votes
+                        .filter(v => v.vote === 'no')
+                        .reduce((sum, vote) => sum + (vote.weight || 1), 0);
 
-                    const totalVotes = selectedRoute.votes.length;
-                    const totalWeight = yesWeight + noWeight;
+                    const totalWeight = selectedRoute.verificationData?.totalWeight || 
+                      (yesWeight + noWeight);
+
+                    const percentageYes = totalWeight > 0 ? (yesWeight / totalWeight * 100) : 0;
+                    const requiredWeight = 5 + (0.2 * selectedRoute.votes.length);
+                    const confidenceScore = selectedRoute.verificationData?.confidenceScore || 
+                      Math.min(100,
+                        (Math.min(1, totalWeight / (requiredWeight * 1.5)) * 50) +
+                        ((yesWeight / Math.max(1, totalWeight)) * 50)
+                      );
+
+                    const currentUserVote = selectedRoute.votes.find(v => v.userId === currentUserId);
+                    const userWeight = currentUserVote?.weight || 0;
 
                     return (
-                      <div style={{ marginBottom: '15px' }}>
-                        <div style={{ 
-                          display: 'flex', 
+                      <>
+                        {/* Confidence Meter */}
+                        <div style={{ marginBottom: '15px' }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            marginBottom: '5px'
+                          }}>
+                            <span>Confidence Score:</span>
+                            <span style={{
+                              fontWeight: 'bold',
+                              color: confidenceScore > 75 ? '#4CAF50' :
+                                    confidenceScore > 50 ? '#FF9800' : '#f44336'
+                            }}>
+                              {Math.round(confidenceScore)}%
+                            </span>
+                          </div>
+                          <div style={{
+                            height: '8px',
+                            backgroundColor: '#e0e0e0',
+                            borderRadius: '4px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              width: `${confidenceScore}%`,
+                              height: '100%',
+                              backgroundColor: confidenceScore > 75 ? '#4CAF50' :
+                                                confidenceScore > 50 ? '#FF9800' : '#f44336'
+                            }} />
+                          </div>
+                        </div>
+
+                        {/* Vote Breakdown */}
+                        <div style={{
+                          display: 'flex',
                           justifyContent: 'space-between',
                           marginBottom: '5px'
                         }}>
                           <span style={{ color: "#4CAF50", fontWeight: 'bold' }}>
-                            Yes: {yesWeight} ({(yesWeight/totalWeight*100).toFixed(0)}%)
+                            Yes: {yesWeight.toFixed(1)} ({(percentageYes).toFixed(0)}%)
                           </span>
                           <span style={{ color: "#f44336", fontWeight: 'bold' }}>
-                            No: {noWeight} ({(noWeight/totalWeight*100).toFixed(0)}%)
+                            No: {noWeight.toFixed(1)} ({(100 - percentageYes).toFixed(0)}%)
                           </span>
                         </div>
+
                         <div style={{
                           height: '10px',
                           backgroundColor: '#e0e0e0',
@@ -1003,22 +1226,74 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
                           marginBottom: '10px'
                         }}>
                           <div style={{
-                            width: `${(yesWeight/totalWeight*100)}%`,
+                            width: `${percentageYes}%`,
                             height: '100%',
-                            backgroundColor: '#4CAF50',
-                            float: 'left'
+                            backgroundColor: '#4CAF50'
                           }} />
+                        </div>
+
+                        {/* Weight Information */}
+                        <div style={{
+                          display: 'grid',
+                          gridTemplateColumns: '1fr 1fr',
+                          gap: '10px',
+                          marginBottom: '15px'
+                        }}>
+                          <div>
+                            <div style={{ fontSize: '12px', color: '#757575' }}>Total Weight</div>
+                            <div style={{ fontWeight: 'bold' }}>{totalWeight.toFixed(1)}</div>
+                          </div>
+                          <div>
+                            <div style={{ fontSize: '12px', color: '#757575' }}>Required</div>
+                            <div style={{ fontWeight: 'bold' }}>{requiredWeight.toFixed(1)}</div>
+                          </div>
+                        </div>
+
+                        {/* User Weight */}
+                        {currentUserId && (
                           <div style={{
-                            width: `${(noWeight/totalWeight*100)}%`,
-                            height: '100%',
-                            backgroundColor: '#f44336',
-                            float: 'left'
-                          }} />
-                        </div>
-                        <div style={{ textAlign: 'center', fontSize: '12px', color: '#757575' }}>
-                          {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'} • {totalWeight} total weight
-                        </div>
-                      </div>
+                            backgroundColor: '#f5f5f5',
+                            padding: '10px',
+                            borderRadius: '8px',
+                            marginBottom: '15px',
+                            border: '1px solid #e0e0e0'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              justifyContent: 'space-between',
+                              alignItems: 'center'
+                            }}>
+                              <span>Your Voting Power:</span>
+                              <span style={{
+                                fontWeight: 'bold',
+                                color: userWeight >= 4 ? '#4CAF50' :
+                                      userWeight >= 2 ? '#FF9800' : '#757575'
+                              }}>
+                                {userWeight.toFixed(1)}x
+                              </span>
+                            </div>
+                            {userWeight > 1 && (
+                              <div style={{
+                                fontSize: '12px',
+                                color: '#757575',
+                                marginTop: '5px'
+                              }}>
+                                {userWeight >= 4 ? 'Super Local' :
+                                userWeight >= 2 ? 'Verified Contributor' : ''}
+                              </div>
+                            )}
+                            {currentUserVote && (
+                              <div style={{
+                                fontSize: '12px',
+                                color: '#757575',
+                                marginTop: '5px'
+                              }}>
+                                You voted {currentUserVote.vote} (weight: {currentUserVote.weight.toFixed(1)})
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </>
                     );
                   })()}
 
@@ -1055,49 +1330,42 @@ const handleRouteVote = async (routeId: string, voteType: 'yes' | 'no') => {
                     </div>
                   )}
                   {/* Voting buttons remain the same */}
-                  {(() => {
-                    // Find the current user's vote for this route
-                    const userId = currentUserId;
-                    const currentVote = selectedRoute.votes.find(v => v.userId === userId);
-                    return (
-                      <div style={{ display: 'flex', gap: '10px' }}>
-                        <button
-                          onClick={() => handleRouteVote(selectedRoute._id, 'yes')}
-                          disabled={isVoting}
-                          style={{
-                            ...styles.button,
-                            backgroundColor: '#4CAF50',
-                            flex: 1,
-                            opacity: isVoting ? 0.7 : 1,
-                            border: currentVote?.vote === 'yes' ? '3px solid gold' : 'none'
-                          }}
-                        >
-                          {isVoting 
-                            ? 'Processing...' 
-                            : currentVote?.vote === 'yes' 
-                              ? '✔ Voted Yes' 
-                              : 'Vote Yes'}
-                        </button>
-                        <button
-                          onClick={() => handleRouteVote(selectedRoute._id, 'no')}
-                          disabled={isVoting}
-                          style={{
-                            ...styles.button,
-                            backgroundColor: '#f44336',
-                            flex: 1,
-                            opacity: isVoting ? 0.7 : 1,
-                            border: currentVote?.vote === 'no' ? '3px solid gold' : 'none'
-                          }}
-                        >
-                          {isVoting 
-                            ? 'Processing...' 
-                            : currentVote?.vote === 'no' 
-                              ? '✔ Voted No' 
-                              : 'Vote No'}
-                        </button>
-                      </div>
-                    );
-                  })()}
+                  <div style={{ display: 'flex', gap: '10px' }}>
+                    <button
+                      onClick={() => handleRouteVote(selectedRoute._id, 'yes')}
+                      disabled={isVoting}
+                      style={{
+                        ...styles.button,
+                        backgroundColor: '#4CAF50',
+                        flex: 1,
+                        opacity: isVoting ? 0.7 : 1,
+                        border: selectedRoute.votes.find(v => v.userId === currentUserId)?.vote === 'yes' ? '3px solid gold' : 'none'
+                      }}
+                    >
+                      {isVoting
+                        ? 'Processing...'
+                        : selectedRoute.votes.find(v => v.userId === currentUserId)?.vote === 'yes'
+                          ? '✔ Voted Yes'
+                          : 'Vote Yes'}
+                    </button>
+                    <button
+                      onClick={() => handleRouteVote(selectedRoute._id, 'no')}
+                      disabled={isVoting}
+                      style={{
+                        ...styles.button,
+                        backgroundColor: '#f44336',
+                        flex: 1,
+                        opacity: isVoting ? 0.7 : 1,
+                        border: selectedRoute.votes.find(v => v.userId === currentUserId)?.vote === 'no' ? '3px solid gold' : 'none'
+                      }}
+                    >
+                      {isVoting
+                        ? 'Processing...'
+                        : selectedRoute.votes.find(v => v.userId === currentUserId)?.vote === 'no'
+                          ? '✔ Voted No'
+                          : 'Vote No'}
+                    </button>
+                  </div>
                 </div>
               )}
 
