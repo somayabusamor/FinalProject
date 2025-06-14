@@ -4,7 +4,9 @@ export default {
       welcome: "🌟 ברוכים הבאים ל",
       appName: "אפליקציית נגב פולס",
       language: "שפה",
-      currentLanguage: "עברית"
+      currentLanguage: "עברית",
+      letsStart: "בוים להתחיל"
+
     },
     villages: {
       title: "כפרים לא מוכרים בנגב"

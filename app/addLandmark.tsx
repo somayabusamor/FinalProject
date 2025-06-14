@@ -349,7 +349,6 @@ const LandmarkModal: React.FC<{
             <p style={{ margin: 0, lineHeight: 1.5 }}>{landmark.description}</p>
           </div>
         )}
-
         {/* Verification Status Section */}
         <div style={{
           backgroundColor: '#f5f5f5',
@@ -362,7 +361,6 @@ const LandmarkModal: React.FC<{
             margin: '0 0 15px 0',
             fontSize: '16px'
           }}>Verification Status</h4>
-          
           {/* Confidence Meter */}
           <div style={{ marginBottom: '15px' }}>
             <div style={{ 

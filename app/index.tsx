@@ -43,6 +43,15 @@ export default function MainIndex() {
 
     fetchVillages();
   }, [baseUrl]);
+  const safePush = (path: string) => {
+  const allowedRoutes = ['/authOptions', '/login', '/signup']; // Add all valid routes
+    if (allowedRoutes.includes(path)) {
+      router.push(path as any);
+    } else {
+      console.warn(`Attempted to navigate to invalid route: ${path}`);
+      router.push('/');
+    }
+  };
   
   const getImageUrl = (village: Village) => {
     if (!village.images || village.images.length === 0) {
@@ -93,15 +102,7 @@ export default function MainIndex() {
       </View>
     );
   }
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", () => {
-      navigator.serviceWorker
-        .register("/service-worker.js")
-        .then((reg) => console.log("Service Worker registered", reg))
-        .catch((err) => console.error("Service Worker registration failed", err));
-    });
-  }
-  
+
   if (error) {
     return (
       <View style={[styles.container, styles.errorContainer]}>
@@ -114,11 +115,10 @@ export default function MainIndex() {
         </TouchableOpacity>
       </View>
     );
-
   }
 
   return (
-        <View style={styles.container}>
+    <View style={styles.container}>
       {/* Header */}
       <View style={styles.header}>
         {/* Top Row - Language Selector */}
@@ -146,24 +146,18 @@ export default function MainIndex() {
           </Text>
         </Animated.View>
 
-        {/* Bottom Row - Auth Buttons */}
-        <View style={styles.authButtons}>
+        {/* Bottom Row - Start Button */}
+        <View style={styles.startButtonContainer}>
           <TouchableOpacity 
-            style={styles.authButton} 
-            onPress={() => router.push('/login')}
+            style={styles.startButton}
+            onPress={() => safePush('/authOptions')}
           >
-            <Text style={styles.authButtonText}>{t.auth.signIn}</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.authButton, styles.signUpButton]}
-            onPress={() => router.push('/signup')}
-          >
-            <Text style={[styles.authButtonText, styles.signUpButtonText]}>{t.auth.signUp}</Text>
+            <Text style={styles.startButtonText}>{t.common.letsStart}</Text>
           </TouchableOpacity>
         </View>
       </View>
 
-      {/* Content Section (keep the rest of your ScrollView content exactly the same) */}
+      {/* Content Section */}
       <ScrollView 
         style={styles.scrollView}
         contentContainerStyle={styles.scrollContent}
@@ -259,7 +253,6 @@ export default function MainIndex() {
   );
 }
 
-
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -323,30 +316,22 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontWeight: 'bold',
   },
-  authButtons: {
+  startButtonContainer: {
     flexDirection: 'row',
     justifyContent: 'center',
     marginTop: 10,
   },
-  authButton: {
-    flex: 1,
-    paddingVertical: 10,
-    borderRadius: 20,
-    marginHorizontal: 5,
-    backgroundColor: '#5d4037',
-    alignItems: 'center',
-    maxWidth: 150,
-  },
-  signUpButton: {
+  startButton: {
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+    borderRadius: 25,
     backgroundColor: '#FFD700',
+    alignItems: 'center',
   },
-  authButtonText: {
-    color: '#FFD700',
-    fontWeight: 'bold',
-    fontSize: 16,
-  },
-  signUpButtonText: {
+  startButtonText: {
     color: '#5d4037',
+    fontWeight: 'bold',
+    fontSize: 18,
   },
   scrollView: {
     flex: 1,
@@ -474,15 +459,5 @@ const styles = StyleSheet.create({
     color: '#FFD700',
     fontSize: 16,
     fontWeight: 'bold',
-  },
-  languageButton: {
-    paddingHorizontal: 10,
-  },
-  languageText: {
-    color: '#fff',
-  },
-  activeLanguage: {
-    borderBottomWidth: 2,
-    borderBottomColor: '#fff',
   },
 });

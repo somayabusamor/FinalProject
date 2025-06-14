@@ -6,7 +6,10 @@ export default {
       welcome: "🌟 Welcome to",
       appName: "Negev Pulse App",
       language: "Language",
-      currentLanguage: "English"
+      currentLanguage: "English",
+     letsStart: "Let's Start"
+
+      
     },
     villages: {
       title: "Unrecognized Villages in the Negev"

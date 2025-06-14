@@ -4,7 +4,9 @@ export default {
       welcome: "🌟 مرحبًا بكم في",
       appName: "تطبيق نبض النقب",
       language: "اللغة",
-      currentLanguage: "العربية"
+      currentLanguage: "العربية",
+      letsStart: "لنبدأ"
+
     },
     villages: {
       title: "القرى غير المعترف بها في النقب"
