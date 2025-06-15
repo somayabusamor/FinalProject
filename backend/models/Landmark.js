@@ -60,7 +60,7 @@ landmarkSchema.methods.updateVerificationStatus = async function() {
   const now = new Date();
   
   // Calculate weights with decay
-  const { totalWeight, yesWeight, noWeight } = this.votes.reduce((acc, vote) => {
+    const { totalWeight, yesWeight, noWeight } = this.votes.reduce((acc, vote) => {
     const voteTime = vote.timestamp || now;
     const hoursOld = (now - voteTime) / (1000 * 60 * 60);
     const decayFactor = Math.exp(-0.005 * hoursOld);
@@ -109,12 +109,52 @@ landmarkSchema.methods.updateVerificationStatus = async function() {
 
   // If status changed to verified, update creator's count
   if (statusChanged && this.status === 'verified') {
+    // Increment verifiedLandmarksAdded and contributions.verified
     await User.findByIdAndUpdate(
       this.createdBy,
       { 
         $inc: { 
           'verifiedLandmarksAdded': 1,
           'contributions.verified': 1 
+        } 
+      },
+      { new: true } // Return the updated document
+
+    );
+  }
+  // After determining verification status
+  if (statusChanged) {
+    // Update voting stats for all users who voted
+    const finalOutcome = this.status === 'verified' ? 'yes' : 'no';
+    
+    await Promise.all(this.votes.map(async (vote) => {
+      const user = await User.findById(vote.userId);
+      if (!user) return;
+
+      const userVoteCorrect = vote.vote === finalOutcome;
+      
+      await User.findByIdAndUpdate(vote.userId, {
+        $inc: {
+          'votingStats.totalVotes': 1,
+          'votingStats.correctVotes': userVoteCorrect ? 1 : 0
+        }
+      });
+
+      // Check for superlocal promotion
+      const updatedUser = await User.findById(vote.userId);
+      if (updatedUser.votingStats.correctVotes >= 10 && !updatedUser.isSuperlocal) {
+        updatedUser.isSuperlocal = true;
+        await updatedUser.save();
+      }
+    }));
+  }
+  // If status changed to rejected, update creator's count
+  if (statusChanged && this.status === 'rejected') {
+    await User.findByIdAndUpdate(
+      this.createdBy,
+      { 
+        $inc: { 
+          'contributions.rejected': 1 
         } 
       }
     );

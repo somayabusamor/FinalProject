@@ -39,15 +39,16 @@ const userSchema = new mongoose.Schema(
         rejected: { type: Number, default: 0 }
       },
     lastActive: Date, // For reputation decay
+    votingStats: {
+      correctVotes: { type: Number, default: 0 },
+      totalVotes: { type: Number, default: 0 }
+    },
+    // Remove the old verifiedLandmarksAdded setter and replace with:
     verifiedLandmarksAdded: {
       type: Number,
       default: 0
     },
-      verifiedRoutesAdded: {  // Add this new field
-      type: Number,
-      default: 0
-    },
-    verifiedLandmarksAdded: {
+    verifiedRoutesAdded: {
       type: Number,
       default: 0
     }
@@ -56,22 +57,42 @@ const userSchema = new mongoose.Schema(
 userSchema.methods.getVoteWeight = function() {
   let weight = 1.0; // Base weight
   
-  // Super users get highest weight
+  // Super users (10+ correct votes) get highest weight
   if (this.isSuperlocal) {
     weight = 4.0;
-  } 
-  // Users who have added verified landmarks get higher weight
-  else if ((this.verifiedRoutesAdded && this.verifiedRoutesAdded > 0) || 
-           (this.verifiedLandmarksAdded && this.verifiedLandmarksAdded > 0)) {
-    weight = 2.0;
+  }
+  // Users with high accuracy (but not yet superlocal) get higher weight
+  else if (this.votingStats?.totalVotes > 0) {
+    const accuracy = this.votingStats.correctVotes / this.votingStats.totalVotes;
+    if (accuracy >= 0.8) {
+      weight = 2.0;
+    }
   }
   // Users with high reputation get higher weight
-  else if (this.reputationScore && this.reputationScore >= 70) {
+  else if (this.reputationScore >= 70) {
     weight = 2.0;
   }
   
   return weight;
 };
+// Add a method to check and update superlocal status
+userSchema.methods.checkSuperlocalStatus = function() {
+  const totalVerified = this.verifiedLandmarksAdded + this.verifiedRoutesAdded;
+  // If the user has added 10 or more verified landmarks or routes, promote to superlocal
+  if (totalVerified  >= 10 && !this.isSuperlocal) {
+    this.isSuperlocal = true;
+    return true; // Indicates status was changed
+  }
+  return false;
+};
+// Add post-save hook for voting-based promotion
+userSchema.post('save', async function(doc, next) {
+  if (doc.votingStats?.correctVotes >= 10 && !doc.isSuperlocal) {
+    doc.isSuperlocal = true;
+    await doc.save();
+  }
+  next();
+});
 // Password hashing middleware
 userSchema.pre('save', function(next) {
   console.log('PRE-SAVE HOOK TRIGGERED'); // Debug 1
@@ -106,7 +127,33 @@ const validateUser = (data) => {
   });
   return schema.validate(data);
 };
-
+// Run this once to initialize voting stats
+const migrateVotingStats = async () => {
+  const landmarks = await Landmark.find();
+  
+  for (const landmark of landmarks) {
+    if (landmark.status === 'pending') continue;
+    
+    const finalOutcome = landmark.status === 'verified' ? 'yes' : 'no';
+    
+    for (const vote of landmark.votes) {
+      await User.findByIdAndUpdate(vote.userId, {
+        $inc: {
+          'votingStats.totalVotes': 1,
+          'votingStats.correctVotes': vote.vote === finalOutcome ? 1 : 0
+        }
+      });
+    }
+  }
+  
+  // Promote users who already have 10+ correct votes
+  await User.updateMany(
+    { 'votingStats.correctVotes': { $gte: 10 } },
+    { $set: { isSuperlocal: true } }
+  );
+  
+  console.log('Voting stats migration completed');
+};
 // With this cleaner version:
 const User = mongoose.model('User', userSchema);
 module.exports = {
