@@ -52,20 +52,18 @@ router.post('/login', async (req, res) => {
   }
 });
 // Check if user is logged in
+// routes/auth.js
 router.get('/me', async (req, res) => {
   try {
-    // Get token from Authorization header
     const authHeader = req.headers.authorization;
     if (!authHeader || !authHeader.startsWith('Bearer ')) {
       return res.status(401).json({ message: 'Not authenticated' });
     }
 
     const token = authHeader.split(' ')[1];
-    
-    // Verify using same secret as login
     const decoded = jwt.verify(token, process.env.JWTPRIVATEKEY);
     
-    // Find user without password
+    // Find user without password but include isSuperlocal
     const user = await User.findById(decoded.userId).select('-password');
     if (!user) {
       return res.status(404).json({ message: 'User not found' });
@@ -76,13 +74,16 @@ router.get('/me', async (req, res) => {
       user: {
         _id: user._id,
         email: user.email,
-        role: user.role
+        role: user.role,
+        isSuperlocal: user.isSuperlocal, // Add this line
+        name: user.name, // Add this if you want to display name
+        verifiedLandmarksAdded: user.verifiedLandmarksAdded, // Add these if needed
+        verifiedRoutesAdded: user.verifiedRoutesAdded,
+        votingStats: user.votingStats
       }
     });
-
   } catch (error) {
     console.error('Auth check error:', error);
-    // More specific error messages
     if (error.name === 'TokenExpiredError') {
       return res.status(401).json({ message: 'Token expired' });
     }

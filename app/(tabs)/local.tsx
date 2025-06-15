@@ -4,13 +4,12 @@ import { MaterialIcons } from '@expo/vector-icons';
 import { useLanguage } from '@/frontend/context/LanguageProvider';
 import { useTranslations } from '@/frontend/constants/locales';
 import { I18nManager } from 'react-native';
-
-
 import { IconSymbol } from '@/frontend/components/ui/IconSymbol';
 import React, { useEffect, useState } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
 import { useFocusEffect } from '@react-navigation/native';
+import { jwtDecode } from 'jwt-decode';
 
 // Use this in both local.tsx and admin.tsx
 interface SuperLocalRequest {
@@ -22,11 +21,17 @@ interface SuperLocalRequest {
   createdAt: string;  // Changed from 'date' to 'createdAt'
 }
 interface UserData {
-  _id: string;       // Add this
+  _id: string;
   name: string;
   email: string;
   points: number;
-  isSuperlocalLocal: boolean;
+  isSuperlocal: boolean;
+  verifiedLandmarksAdded: number;
+  verifiedRoutesAdded: number;
+  votingStats: {
+    correctVotes: number;
+    totalVotes: number;
+  };
 }
 export default function LocalPage() {
   const { language } = useLanguage();
@@ -39,7 +44,13 @@ export default function LocalPage() {
     name: '',
     email: '',
     points: 0,
-    isSuperlocalLocal: false
+    isSuperlocal: false,
+    verifiedLandmarksAdded: 0,
+    verifiedRoutesAdded: 0,
+    votingStats: {
+      correctVotes: 0,
+      totalVotes: 0
+    }
   });
   const [requestSent, setRequestSent] = useState(false);
   const [superLocalRequests, setSuperLocalRequests] = useState<SuperLocalRequest[]>([]);
@@ -59,7 +70,13 @@ export default function LocalPage() {
                   name: user.name || user.email.split('@')[0],
                   email: user.email,
                   points: 0,
-                  isSuperlocalLocal: user.isSuperlocal || false
+                  isSuperlocal: user.isSuperlocal || false,
+                  verifiedLandmarksAdded: user.verifiedLandmarksAdded ?? 0,
+                  verifiedRoutesAdded: user.verifiedRoutesAdded ?? 0,
+                  votingStats: {
+                    correctVotes: user.votingStats?.correctVotes ?? 0,
+                    totalVotes: user.votingStats?.totalVotes ?? 0
+                  }
                 });
               }
             } catch (error) {
@@ -70,60 +87,79 @@ export default function LocalPage() {
         fetchData();
       }, [])
     );
+
   // In local.tsx
-  useEffect(() => {
-    const fetchUserData = async () => {
-      try {
-        const token = await AsyncStorage.getItem('token');
-        if (!token) {
-          throw new Error('No authentication token found');
-        }
-
-        // Correct the port to 8082
-        const response = await axios.get('http://localhost:8082/api/auth/me', {
-          headers: {
-            'Authorization': `Bearer ${token}`
-          }
+useEffect(() => {
+  const fetchUserData = async () => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      const response = await axios.get('http://localhost:8082/api/auth/me', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      console.log('Full API response:', response.data); // Debug log
+      
+      if (response.data?.success) {
+        const user = response.data.user;
+        console.log('User isSuperlocal:', user.isSuperlocal); // Debug log
+        
+        setUserData({
+          _id: user._id,
+          name: user.name || user.email.split('@')[0],
+          email: user.email,
+          points: 0,
+          isSuperlocal: user.isSuperlocal, // Remove the || false here!
+          verifiedLandmarksAdded: user.verifiedLandmarksAdded || 0,
+          verifiedRoutesAdded: user.verifiedRoutesAdded || 0,
+          votingStats: user.votingStats || { correctVotes: 0, totalVotes: 0 }
         });
-
-        if (response.data?.success) {
-          const user = response.data.user; // Note: it's response.data.user, not response.data.data
-          setUserData({
-            _id: user._id,      // Make sure this is included
-            name: user.name || user.email.split('@')[0],
-            email: user.email,
-            points: 0,
-            isSuperlocalLocal: user.isSuperlocal || false
-          });
-          
-          // Check requests
-          const requests = await fetchSuperLocalRequests();
-          const hasPendingRequest = requests.some(
-            req => req.userId === user._id && req.status === 'pending'
-          );
-          setRequestSent(hasPendingRequest);
-          
-          await AsyncStorage.setItem('userRole', user.role);
-        }
-      } catch (error) {
-        console.error('Error fetching user data:', error);
-        // Fallback to stored data
-        const storedUser = await AsyncStorage.getItem('userData');
-        if (storedUser) {
-          const user = JSON.parse(storedUser);
-          setUserData({
-            _id: user._id,      // Make sure this is included
-            name: user.name || user.email.split('@')[0],
-            email: user.email,
-            points: 0,
-            isSuperlocalLocal: user.isSuperlocal || false
-          });
-        }
       }
-    };
-    
-    fetchUserData();
-  }, []);
+    } catch (error) {
+      console.error('Error fetching user data:', error);
+    }
+  };
+  fetchUserData();
+}, []);
+type DecodedToken = {
+  isSuperlocal?: boolean;
+  [key: string]: any;
+};
+
+useEffect(() => {
+  const decodeToken = async () => {
+    const token = await AsyncStorage.getItem('token');
+    if (token) {
+      try {
+        const decoded = jwtDecode<DecodedToken>(token); // Use custom type
+        console.log('Decoded token:', decoded);
+        if (decoded.isSuperlocal) {
+          setUserData(prev => ({ ...prev, isSuperlocal: true }));
+        }
+      } catch (e) {
+        console.error('Error decoding token:', e);
+      }
+    }
+  };
+  decodeToken();
+}, []);
+ const getUserStatus = () => {
+  // This should be the first check
+  if (userData.isSuperlocal) {
+    return 'SuperLocal Resident';
+  }
+  
+  const totalVerified = userData.verifiedLandmarksAdded + userData.verifiedRoutesAdded;
+  const votingAccuracy = userData.votingStats.totalVotes > 0 
+    ? userData.votingStats.correctVotes / userData.votingStats.totalVotes 
+    : 0;
+  
+  if (totalVerified >= 2 || (votingAccuracy >= 0.8 && userData.votingStats.totalVotes >= 5)) {
+    return 'Active Resident';
+  }
+  
+  return 'Regular Resident';
+};
+  const userStatus = getUserStatus();
 
   const handleAddRoute = () => {
     router.push('/addRoute');
@@ -210,6 +246,7 @@ export default function LocalPage() {
     return <Text>You do not have access to this screen.</Text>;
   }
 
+
   return (
     <View style={{ flex: 1 }}>
       {/* Keep your existing Tabs configuration */}
@@ -218,23 +255,91 @@ export default function LocalPage() {
         {/* Profile Header */}
         <View style={styles.profileHeader}>
           <View style={styles.profileInfo}>
-            <Text style={styles.profileName}>{userData.name}</Text>
+            <Text style={styles.profileName}>{userData.name || userData.email.split('@')[0]}</Text>
             <Text style={styles.profileEmail}>{userData.email}</Text>
-            <View style={styles.pointsContainer}>
+            
+            {/* Status Badge */}
+            <View style={[
+              styles.statusBadge,
+              userStatus === 'SuperLocal Resident' && styles.superLocalBadge,
+              userStatus === 'Active Resident' && styles.activeResidentBadge
+            ]}>
+              <Text style={[
+                styles.statusText,
+                userStatus === 'SuperLocal Resident' && styles.superLocalText,
+                userStatus === 'Active Resident' && styles.activeResidentText
+              ]}>
+                {userStatus}
+              </Text>
             </View>
-            {userData.isSuperlocalLocal ? (
-              <View style={styles.badge}>
-                <Text style={styles.badgeText}>Super Local</Text>
+            {/* Status Card */}
+            <View style={styles.statusCard}>
+              {userStatus === 'SuperLocal Resident' ? (
+                <>
+                  <View style={styles.statusHeader}>
+                    <MaterialIcons name="verified" size={24} color="#4caf50" />
+                    <Text style={styles.statusTitle}>SuperLocal Status</Text>
+                  </View>
+                  <Text style={styles.statusText}>
+                    You've earned SuperLocal status with {userData.votingStats.correctVotes} correct votes!
+                  </Text>
+                </>
+              ) : userStatus === 'Active Resident' ? (
+                <>
+                  <View style={styles.statusHeader}>
+                    <MaterialIcons name="star" size={24} color="#FFD700" />
+                    <Text style={styles.statusTitle}>Active Resident</Text>
+                  </View>
+                  <Text style={styles.statusText}>
+                    You're on your way to becoming a SuperLocal! You need {10 - userData.votingStats.correctVotes} more correct votes.
+                  </Text>
+                  {!requestSent && (
+                    <TouchableOpacity 
+                      style={styles.requestButton}
+                      onPress={handleRequestSuperLocal}
+                    >
+                      <Text style={styles.requestButtonText}>Apply for SuperLocal</Text>
+                    </TouchableOpacity>
+                  )}
+                </>
+              ) : (
+                <>
+                  <View style={styles.statusHeader}>
+                    <MaterialIcons name="person" size={24} color="#6d4c41" />
+                    <Text style={styles.statusTitle}>Regular Resident</Text>
+                  </View>
+                  <Text style={styles.statusText}>
+                    Get started by:
+                    {"\n"}• Adding new landmarks or routes
+                    {"\n"}• Voting on pending contributions
+                    {"\n"}• Earn Active status at 2+ verifications
+                  </Text>
+                </>
+              )}
+            </View>
+
+            {/* Progress to SuperLocal */}
+            {userStatus !== 'SuperLocal Resident' && (
+              <View style={styles.progressContainer}>
+                <Text style={styles.progressText}>
+                  Progress: {userData.votingStats.correctVotes}/10 correct votes
+                </Text>
+                <View style={styles.progressBar}>
+                  <View style={[
+                    styles.progressFill, 
+                    { 
+                      width: `${Math.min(100, (userData.votingStats.correctVotes / 10) * 100)}%` 
+                    }
+                  ]} />
+                </View>
               </View>
-            ) : (
-              <Text style={styles.regularLocalText}>Local Resident</Text>
             )}
           </View>
         </View>
 
         {/* Status Card - Moved under profile */}
         <View style={styles.statusCard}>
-          {userData.isSuperlocalLocal ? (
+          {userData.isSuperlocal ? (
             <>
               <View style={styles.statusHeader}>
                 <MaterialIcons name="verified" size={24} color="#4caf50" />
@@ -286,7 +391,7 @@ export default function LocalPage() {
         </View>
 
         {/* Keep the rest of your existing components */}
-        {!userData.isSuperlocalLocal && !requestSent && (
+        {!userData.isSuperlocal && !requestSent && (
           <TouchableOpacity 
             style={[styles.actionButton, styles.superLocalButton]}
             onPress={handleRequestSuperLocal}
@@ -565,5 +670,44 @@ messageText: {
   fontSize: 14,
   lineHeight: 20,
   color: '#424242',
+},
+statusBadge: {
+  paddingHorizontal: 12,
+  paddingVertical: 6,
+  borderRadius: 15,
+  alignSelf: 'flex-start',
+  marginTop: 8,
+  backgroundColor: '#f0e6e2',
+},
+superLocalBadge: {
+  backgroundColor: '#6d4c41',
+},
+activeResidentBadge: {
+  backgroundColor: '#FFD700',
+},
+superLocalText: {
+  color: '#FFD700',
+},
+activeResidentText: {
+  color: '#6d4c41',
+},
+progressContainer: {
+  marginTop: 12,
+  width: '100%',
+},
+progressText: {
+  fontSize: 12,
+  color: '#8d6e63',
+  marginBottom: 4,
+},
+progressBar: {
+  height: 6,
+  backgroundColor: '#f0e6e2',
+  borderRadius: 3,
+  overflow: 'hidden',
+},
+progressFill: {
+  height: '100%',
+  backgroundColor: '#6d4c41',
 },
 });

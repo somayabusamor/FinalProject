@@ -158,51 +158,6 @@ app.post("/api/auth/login", async (req, res) => {
     res.status(500).send({ message: "Server error" });
   }
 });
-app.get('/api/fix-user', async (req, res) => {
-  try {
-    // 1. Delete existing
-    await User.deleteMany({email: "test@example.com"});
-
-    // 2. Create and validate before save
-    const password = "test123";
-    const salt = await bcrypt.genSalt(10);
-    const hash = await bcrypt.hash(password, salt);
-    
-    console.log('Original hash:', hash);
-    
-    // 3. Manually create document to avoid middleware issues
-    const result = await mongoose.connection.collection('users').insertOne({
-      name: "Test User",
-      email: "test@example.com",
-      password: hash,
-      role: "local",
-      isSuperlocal: false,
-      createdAt: new Date(),
-      updatedAt: new Date()
-    });
-
-    // 4. Verify storage
-    const rawDoc = await mongoose.connection.collection('users')
-      .findOne({_id: result.insertedId});
-    
-    console.log('Stored hash:', rawDoc.password);
-    console.log('Hash matches:', rawDoc.password === hash);
-
-    // 5. Test comparison
-    const valid = await bcrypt.compare(password, rawDoc.password);
-    console.log('Database comparison:', valid);
-
-    res.json({
-      success: valid,
-      storedCorrectly: rawDoc.password === hash,
-      dbComparison: valid
-    });
-  } catch (error) {
-    console.error('Fix error:', error);
-    res.status(500).json({error: error.message});
-  }
-});
-
 // GET single village
 router.get('/:id', async (req, res) => {
   try {
